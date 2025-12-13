@@ -1,7 +1,7 @@
 """Tests for knowledge_graph.py"""
 
 import sys
-sys.path.append(".")  # So we can import from parent directory
+sys.path.append(".")
 
 from knowledge_graph import KnowledgeGraph
 
@@ -18,20 +18,20 @@ def test_knowledge_graph():
     
     # Test 2: Prerequisites
     print("\n2. Prerequisites")
-    print("   chain_rule requires:", kg.get_prerequisites("chain_rule"))
-    print("   maxima_minima ancestors:", kg.get_all_ancestors("maxima_minima"))
+    print("   determinants requires:", kg.get_prerequisites("determinants"))
+    print("   eigenvalues ancestors:", kg.get_all_ancestors("eigenvalues"))
     
     # Test 3: Root cause tracing
     print("\n3. Root Cause Tracing")
     weak_mastery = {
-        "limits": 0.3,
-        "continuity": 0.7,
-        "derivatives": 0.8,
-        "chain_rule": 0.5,
-        "maxima_minima": 0.2
+        "vectors": 0.3,
+        "matrix_ops": 0.7,
+        "determinants": 0.8,
+        "inverse_matrix": 0.5,
+        "eigenvalues": 0.2
     }
-    root = kg.trace_root_cause("maxima_minima", weak_mastery)
-    print(f"   Student failed maxima_minima")
+    root = kg.trace_root_cause("eigenvalues", weak_mastery)
+    print(f"   Student failed eigenvalues")
     print(f"   Mastery: {weak_mastery}")
     print(f"   Root cause: {root}")
     

@@ -28,17 +28,17 @@ def test_redis_store():
     
     # Test 3: Update mastery
     print("\n3. Update Mastery")
-    old_score = session['mastery']['limits']
-    new_score = store.update_mastery(test_session, "limits", is_correct=True)
-    print(f"   limits: {old_score} -> {new_score} (correct answer)")
+    old_score = session['mastery']['vectors']
+    new_score = store.update_mastery(test_session, "vectors", is_correct=True)
+    print(f"   vectors: {old_score} -> {new_score} (correct answer)")
     
-    new_score = store.update_mastery(test_session, "derivatives", is_correct=False)
-    print(f"   derivatives: 0.5 -> {new_score} (wrong answer)")
+    new_score = store.update_mastery(test_session, "determinants", is_correct=False)
+    print(f"   determinants: 0.5 -> {new_score} (wrong answer)")
     
     # Test 4: Record answers
     print("\n4. Record Answers")
-    store.record_answer(test_session, "lim_e1", "limits", True)
-    store.record_answer(test_session, "deriv_m1", "derivatives", False)
+    store.record_answer(test_session, "vec_1", "vectors", True)
+    store.record_answer(test_session, "det_1", "determinants", False)
     answers = store.get_answers(test_session)
     print(f"   Recorded: {len(answers)} answers")
     
@@ -50,7 +50,7 @@ def test_redis_store():
     
     # Test 6: Root cause
     print("\n6. Root Cause")
-    store.set_root_cause(test_session, "limits")
+    store.set_root_cause(test_session, "vectors")
     root = store.get_root_cause(test_session)
     print(f"   Root cause set to: {root}")
     
