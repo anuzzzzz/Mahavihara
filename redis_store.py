@@ -1,10 +1,11 @@
 """
-Redis Store - Session and mastery state management.
+Redis Store - Session and state management for Linear Learning Flow.
 
 Key Structure:
-    session:{session_id}:state   -> Hash (phase, root_cause, questions_asked, teaching_turns, weak_concepts_queue)
+    session:{session_id}:state   -> Hash (phase, current_concept_index, teaching_turns, can_advance)
     session:{session_id}:mastery -> Hash (concept_id -> score)
     session:{session_id}:answers -> List (JSON of each answer)
+    session:{session_id}:quiz    -> Hash (questions JSON, current_index, answers JSON)
 """
 
 import os
@@ -47,6 +48,9 @@ class RedisStore:
     def _answers_key(self, session_id: str) -> str:
         return f"session:{session_id}:answers"
 
+    def _quiz_key(self, session_id: str) -> str:
+        return f"session:{session_id}:quiz"
+
     # ==================== Session Management ====================
 
     def create_session(self, session_id: str) -> Dict:
@@ -55,11 +59,12 @@ class RedisStore:
         mastery_key = self._mastery_key(session_id)
         
         initial_state = {
-            "phase": "diagnostic",
-            "questions_asked": "0",
-            "root_cause": "",
+            "phase": "lesson",
+            "current_concept_index": "0",
             "teaching_turns": "0",
-            "weak_concepts_queue": ""
+            "can_advance": "0",
+            "verify_questions_asked": "0",
+            "verify_correct": "0"
         }
         
         self.client.hset(state_key, mapping=initial_state)
@@ -103,7 +108,8 @@ class RedisStore:
         self.client.delete(
             self._state_key(session_id),
             self._mastery_key(session_id),
-            self._answers_key(session_id)
+            self._answers_key(session_id),
+            self._quiz_key(session_id)
         )
 
     # ==================== Mastery Management ====================
@@ -115,17 +121,14 @@ class RedisStore:
         return {k: float(v) for k, v in mastery_raw.items()}
 
     def update_mastery(self, session_id: str, concept_id: str, is_correct: bool) -> float:
-        """
-        Update mastery score based on answer correctness.
-        Correct: +0.15, Wrong: -0.20
-        """
+        """Update mastery score based on answer correctness."""
         mastery_key = self._mastery_key(session_id)
         current = float(self.client.hget(mastery_key, concept_id) or self.DEFAULT_MASTERY)
         
         if is_correct:
             new_score = current + 0.15
         else:
-            new_score = current - 0.20
+            new_score = current - 0.10  # Less harsh penalty
         
         new_score = max(0.0, min(1.0, new_score))
         self.client.hset(mastery_key, concept_id, new_score)
@@ -162,36 +165,24 @@ class RedisStore:
     def get_phase(self, session_id: str) -> str:
         """Get current phase of the session."""
         state_key = self._state_key(session_id)
-        return self.client.hget(state_key, "phase") or "diagnostic"
+        return self.client.hget(state_key, "phase") or "lesson"
 
     def set_phase(self, session_id: str, phase: str):
         """Update the current phase."""
         state_key = self._state_key(session_id)
         self.client.hset(state_key, "phase", phase)
 
-    # ==================== Root Cause Management ====================
+    # ==================== Current Concept Management ====================
 
-    def get_root_cause(self, session_id: str) -> str:
-        """Get the identified root cause concept."""
+    def get_current_concept_index(self, session_id: str) -> int:
+        """Get index of current concept (0-4)."""
         state_key = self._state_key(session_id)
-        return self.client.hget(state_key, "root_cause") or ""
+        return int(self.client.hget(state_key, "current_concept_index") or 0)
 
-    def set_root_cause(self, session_id: str, concept_id: str):
-        """Store the identified root cause concept."""
+    def set_current_concept_index(self, session_id: str, index: int):
+        """Set current concept index."""
         state_key = self._state_key(session_id)
-        self.client.hset(state_key, "root_cause", concept_id)
-
-    # ==================== Questions Counter ====================
-
-    def get_questions_asked(self, session_id: str) -> int:
-        """Get number of diagnostic questions asked."""
-        state_key = self._state_key(session_id)
-        return int(self.client.hget(state_key, "questions_asked") or 0)
-
-    def increment_questions_asked(self, session_id: str) -> int:
-        """Increment and return questions asked counter."""
-        state_key = self._state_key(session_id)
-        return self.client.hincrby(state_key, "questions_asked", 1)
+        self.client.hset(state_key, "current_concept_index", index)
 
     # ==================== Teaching Turns Management ====================
 
@@ -201,7 +192,7 @@ class RedisStore:
         return int(self.client.hget(state_key, "teaching_turns") or 0)
 
     def increment_teaching_turns(self, session_id: str) -> int:
-        """Increment and return teaching turns counter."""
+        """Increment teaching turns counter."""
         state_key = self._state_key(session_id)
         return self.client.hincrby(state_key, "teaching_turns", 1)
 
@@ -210,20 +201,58 @@ class RedisStore:
         state_key = self._state_key(session_id)
         self.client.hset(state_key, "teaching_turns", 0)
 
-    # ==================== Weak Concepts Queue ====================
+    # ==================== Advancement Control ====================
 
-    def get_weak_concepts_queue(self, session_id: str) -> List[str]:
-        """Get the queue of concepts to teach."""
+    def get_can_advance(self, session_id: str) -> bool:
+        """Check if user can advance to next concept."""
         state_key = self._state_key(session_id)
-        queue = self.client.hget(state_key, "weak_concepts_queue") or ""
-        return [c for c in queue.split(",") if c]  # Filter empty strings
+        return self.client.hget(state_key, "can_advance") == "1"
 
-    def set_weak_concepts_queue(self, session_id: str, concepts: List[str]):
-        """Set the queue of concepts to teach."""
+    def set_can_advance(self, session_id: str, can_advance: bool):
+        """Set whether user can advance."""
         state_key = self._state_key(session_id)
-        self.client.hset(state_key, "weak_concepts_queue", ",".join(concepts))
+        self.client.hset(state_key, "can_advance", "1" if can_advance else "0")
 
-    # ==================== Verification Progress ====================
+    # ==================== Quiz Management ====================
+
+    def set_quiz_questions(self, session_id: str, questions: List[dict]):
+        """Store quiz questions for current quiz session."""
+        quiz_key = self._quiz_key(session_id)
+        self.client.hset(quiz_key, "questions", json.dumps(questions))
+
+    def get_quiz_questions(self, session_id: str) -> List[dict]:
+        """Get quiz questions for current quiz session."""
+        quiz_key = self._quiz_key(session_id)
+        questions_json = self.client.hget(quiz_key, "questions")
+        return json.loads(questions_json) if questions_json else []
+
+    def set_quiz_current_index(self, session_id: str, index: int):
+        """Set current question index in quiz."""
+        quiz_key = self._quiz_key(session_id)
+        self.client.hset(quiz_key, "current_index", index)
+
+    def get_quiz_current_index(self, session_id: str) -> int:
+        """Get current question index in quiz."""
+        quiz_key = self._quiz_key(session_id)
+        return int(self.client.hget(quiz_key, "current_index") or 0)
+
+    def set_quiz_answers(self, session_id: str, answers: List[dict]):
+        """Store quiz answers for gap analysis."""
+        quiz_key = self._quiz_key(session_id)
+        self.client.hset(quiz_key, "answers", json.dumps(answers))
+
+    def get_quiz_answers(self, session_id: str) -> List[dict]:
+        """Get quiz answers for gap analysis."""
+        quiz_key = self._quiz_key(session_id)
+        answers_json = self.client.hget(quiz_key, "answers")
+        return json.loads(answers_json) if answers_json else []
+
+    def reset_quiz(self, session_id: str):
+        """Reset quiz state for retry."""
+        quiz_key = self._quiz_key(session_id)
+        self.client.delete(quiz_key)
+
+    # ==================== Verify Progress (Legacy Support) ====================
 
     def get_verify_progress(self, session_id: str) -> dict:
         """Get verification progress for current concept."""
@@ -244,3 +273,33 @@ class RedisStore:
         state_key = self._state_key(session_id)
         self.client.hset(state_key, "verify_questions_asked", 0)
         self.client.hset(state_key, "verify_correct", 0)
+
+    # ==================== Legacy Support ====================
+
+    def get_questions_asked(self, session_id: str) -> int:
+        """Legacy: Get number of diagnostic questions asked."""
+        return len(self.get_asked_questions(session_id))
+
+    def increment_questions_asked(self, session_id: str) -> int:
+        """Legacy: No-op for backward compatibility."""
+        return self.get_questions_asked(session_id)
+
+    def get_root_cause(self, session_id: str) -> str:
+        """Legacy: Get current concept as root cause."""
+        idx = self.get_current_concept_index(session_id)
+        concepts = ["vectors", "matrix_ops", "determinants", "inverse_matrix", "eigenvalues"]
+        return concepts[idx] if idx < len(concepts) else ""
+
+    def set_root_cause(self, session_id: str, concept_id: str):
+        """Legacy: No-op for backward compatibility."""
+        pass
+
+    def get_weak_concepts_queue(self, session_id: str) -> List[str]:
+        """Legacy: Return remaining concepts."""
+        idx = self.get_current_concept_index(session_id)
+        concepts = ["vectors", "matrix_ops", "determinants", "inverse_matrix", "eigenvalues"]
+        return concepts[idx:]
+
+    def set_weak_concepts_queue(self, session_id: str, concepts: List[str]):
+        """Legacy: No-op for backward compatibility."""
+        pass
