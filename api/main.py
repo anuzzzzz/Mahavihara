@@ -30,9 +30,9 @@ from core.knowledge_graph import KnowledgeGraph
 from core.student_model import StudentModel
 from core.adaptive_tester import AdaptiveTester
 from core.misconception_detector import MisconceptionDetector, WrongAnswerAnalysis
-from core.prescription_engine import PrescriptionEngine
 from teaching.socratic_tutor import SocraticTutor, TutorContext
 from teaching.resource_curator import ResourceCurator
+from teaching.prescription_engine import PrescriptionEngine, format_prescription_for_display
 from redis_store import RedisStore
 
 # ==================== Initialize ====================
@@ -112,15 +112,12 @@ class DiagnoseResponse(BaseModel):
 
 
 class PrescriptionResponse(BaseModel):
-    concept_id: str
-    concept_name: str
-    severity: int
-    root_cause: Optional[dict]
-    misconceptions: List[dict]
-    phases: List[dict]
-    total_estimated_minutes: int
-    verification: dict
-    formatted: str  # Markdown for display
+    """Response model matching teaching/prescription_engine.py format"""
+    diagnosis: dict  # {failed_concept, root_cause, misconception, explanation, confidence}
+    prescription: dict  # {phases, total_time}
+    resources: dict  # {items}
+    verification: dict  # {criteria, question_ids}
+    formatted: str  # Terminal display format
 
 
 class VerifyRequest(BaseModel):
@@ -410,28 +407,31 @@ You've mastered Linear Algebra fundamentals!"""
                     # Failed - generate prescription
                     store.set_can_advance(session_id, False)
 
-                    # Analyze wrong answers
-                    wrong_analyses = []
-                    for qa in quiz_answers:
-                        if not qa["is_correct"]:
-                            analysis = misconception_detector.analyze_wrong_answer(
-                                question_id=qa["question_id"],
-                                concept_id=current_concept,
-                                user_answer=qa["user_answer"],
-                                correct_answer=qa["correct_answer"]
-                            )
-                            wrong_analyses.append(analysis)
+                    # Convert quiz answers to format expected by new prescription engine
+                    wrong_answers = [
+                        {
+                            "question_id": qa["question_id"],
+                            "chosen": ord(qa["user_answer"].upper()) - ord('A') if qa["user_answer"] else 0,
+                            "correct": ord(qa["correct_answer"].upper()) - ord('A') if qa["correct_answer"] else 0,
+                            "is_correct": qa["is_correct"]
+                        }
+                        for qa in quiz_answers
+                    ]
 
-                    # Generate prescription
-                    engine = PrescriptionEngine(kg, model, misconception_detector)
+                    # Get mastery scores
+                    mastery_scores = {c: model.get_mastery(c) for c in get_concept_order()}
+
+                    # Generate prescription using new teaching engine
+                    engine = PrescriptionEngine(kg)
                     prescription = engine.generate_prescription(
-                        concept_id=current_concept,
-                        wrong_answers=wrong_analyses,
-                        session_id=session_id
+                        failed_concept=current_concept,
+                        wrong_answers=wrong_answers,
+                        mastery_scores=mastery_scores,
+                        learning_style="visual"
                     )
 
                     # Format for display
-                    prescription_text = engine.format_prescription_for_display(prescription)
+                    prescription_text = format_prescription_for_display(prescription)
 
                     response_messages.append({
                         "role": "assistant",
@@ -625,54 +625,40 @@ def get_prescription(session_id: str, concept_id: str):
 
     # Get recent quiz answers for this concept (if available)
     quiz_answers = store.get_quiz_answers(session_id)
-    wrong_analyses = []
 
-    for qa in quiz_answers:
-        if not qa.get("is_correct", True):
-            analysis = misconception_detector.analyze_wrong_answer(
-                question_id=qa.get("question_id", "unknown"),
-                concept_id=concept_id,
-                user_answer=qa.get("user_answer", ""),
-                correct_answer=qa.get("correct_answer", "")
-            )
-            wrong_analyses.append(analysis)
+    # Convert to format expected by new prescription engine
+    wrong_answers = [
+        {
+            "question_id": qa.get("question_id", "unknown"),
+            "chosen": ord(qa.get("user_answer", "A").upper()) - ord('A'),
+            "correct": ord(qa.get("correct_answer", "A").upper()) - ord('A'),
+            "is_correct": qa.get("is_correct", True)
+        }
+        for qa in quiz_answers
+    ]
 
-    # Generate prescription
-    engine = PrescriptionEngine(kg, model, misconception_detector)
+    # Get mastery scores
+    mastery_scores = {c: model.get_mastery(c) for c in get_concept_order()}
+
+    # Generate prescription using new teaching engine
+    engine = PrescriptionEngine(kg)
     prescription = engine.generate_prescription(
-        concept_id=concept_id,
-        wrong_answers=wrong_analyses,
-        session_id=session_id
+        failed_concept=concept_id,
+        wrong_answers=wrong_answers,
+        mastery_scores=mastery_scores,
+        learning_style="visual"
     )
+
+    # Get frontend format
+    frontend_data = prescription.to_frontend_format()
 
     # Convert to response format
     return PrescriptionResponse(
-        concept_id=prescription.diagnosed_concept,
-        concept_name=prescription.diagnosed_concept_name,
-        severity=prescription.severity,
-        root_cause={
-            "concept_id": prescription.root_cause_concept,
-            "concept_name": prescription.root_cause_name
-        } if prescription.root_cause_concept else None,
-        misconceptions=[
-            {
-                "id": m.id,
-                "name": m.name,
-                "description": m.description,
-                "severity": m.severity,
-                "remediation_concept": m.remediation_concept,
-                "remediation_focus": m.remediation_focus
-            }
-            for m in prescription.misconceptions
-        ],
-        phases=engine.to_frontend_format(prescription)["phases"],
-        total_estimated_minutes=prescription.total_estimated_minutes,
-        verification={
-            "questions_to_pass": prescription.questions_to_pass,
-            "questions_total": prescription.questions_total,
-            "must_show_work": prescription.must_show_work
-        },
-        formatted=engine.format_prescription_for_display(prescription)
+        diagnosis=frontend_data["diagnosis"],
+        prescription=frontend_data["prescription"],
+        resources=frontend_data["resources"],
+        verification=frontend_data["verification"],
+        formatted=format_prescription_for_display(prescription)
     )
 
 

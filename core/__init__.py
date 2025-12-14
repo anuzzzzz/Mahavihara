@@ -1,5 +1,5 @@
 """
-Core module - Knowledge modeling, adaptive testing, and prescription generation.
+Core module - Knowledge modeling, adaptive testing, and misconception detection.
 
 Components:
     - knowledge_graph: Concept dependency DAG with prerequisites
@@ -7,7 +7,8 @@ Components:
     - adaptive_tester: Computerized Adaptive Testing (CAT)
     - misconception_db: Wrong answer -> misconception mapping (legacy)
     - misconception_detector: Advanced misconception detection
-    - prescription_engine: Learning prescription generation
+
+Note: PrescriptionEngine has moved to teaching/ module.
 """
 
 from .knowledge_graph import KnowledgeGraph
@@ -15,7 +16,6 @@ from .student_model import StudentModel
 from .adaptive_tester import AdaptiveTester
 from .misconception_db import MisconceptionDB
 from .misconception_detector import MisconceptionDetector, Misconception, WrongAnswerAnalysis
-from .prescription_engine import PrescriptionEngine, LearningPrescription
 
 __all__ = [
     "KnowledgeGraph",
@@ -25,6 +25,4 @@ __all__ = [
     "MisconceptionDetector",
     "Misconception",
     "WrongAnswerAnalysis",
-    "PrescriptionEngine",
-    "LearningPrescription",
 ]
