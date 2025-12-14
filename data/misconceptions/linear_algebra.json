@@ -1,0 +1,108 @@
+{
+  "topic": "linear_algebra",
+  "misconceptions": [
+    {
+      "id": "vec_magnitude_add",
+      "concept_id": "vectors",
+      "pattern": "adds_components",
+      "description": "Student adds x + y instead of using √(x² + y²)",
+      "explanation": "The magnitude is the LENGTH of the vector, which uses Pythagorean theorem",
+      "remediation": "Think of a right triangle: the vector is the hypotenuse, x and y are the legs"
+    },
+    {
+      "id": "vec_dot_multiply",
+      "concept_id": "vectors",
+      "pattern": "element_multiply",
+      "description": "Student multiplies elements and keeps as vector instead of summing",
+      "explanation": "Dot product gives a SCALAR (single number), not a vector",
+      "remediation": "Dot product = (a₁×b₁) + (a₂×b₂) → one number!"
+    },
+    {
+      "id": "mat_elementwise",
+      "concept_id": "matrix_ops",
+      "pattern": "elementwise_multiply",
+      "description": "Student multiplies element-by-element instead of row×column",
+      "explanation": "Matrix multiplication uses dot products: row of A • column of B",
+      "remediation": "Each result element comes from a row-column dot product"
+    },
+    {
+      "id": "mat_dim_wrong",
+      "concept_id": "matrix_ops",
+      "pattern": "dimension_confusion",
+      "description": "Student confuses which dimensions must match for multiplication",
+      "explanation": "Inner dimensions must match: (m×n) × (n×p) → columns of first = rows of second",
+      "remediation": "Think: 'inner dimensions cancel out' like fractions"
+    },
+    {
+      "id": "det_add_diagonal",
+      "concept_id": "determinants",
+      "pattern": "adds_diagonal",
+      "description": "Student adds diagonal elements instead of ad-bc",
+      "explanation": "2×2 determinant = (top-left × bottom-right) - (top-right × bottom-left)",
+      "remediation": "Main diagonal MINUS anti-diagonal, with multiplication"
+    },
+    {
+      "id": "det_zero_meaning",
+      "concept_id": "determinants",
+      "pattern": "zero_misunderstanding",
+      "description": "Student thinks det=0 means matrix is 'empty' or 'zero'",
+      "explanation": "det=0 means the matrix squishes space to a lower dimension (no inverse exists)",
+      "remediation": "Zero determinant = columns are linearly dependent = no inverse"
+    },
+    {
+      "id": "inv_reciprocal",
+      "concept_id": "inverse_matrix",
+      "pattern": "element_reciprocal",
+      "description": "Student takes 1/each element instead of proper inverse formula",
+      "explanation": "Matrix inverse requires swapping, negating, and dividing by determinant",
+      "remediation": "For 2×2: swap a↔d, negate b and c, divide all by det"
+    },
+    {
+      "id": "inv_det_zero",
+      "concept_id": "inverse_matrix",
+      "pattern": "ignores_det_zero",
+      "description": "Student tries to find inverse when det=0",
+      "explanation": "If det=0, NO inverse exists. The matrix is 'singular'",
+      "remediation": "Always check det first! det=0 → no inverse"
+    },
+    {
+      "id": "eigen_diagonal",
+      "concept_id": "eigenvalues",
+      "pattern": "diagonal_values",
+      "description": "Student thinks diagonal elements are always eigenvalues",
+      "explanation": "Eigenvalues require solving det(A - λI) = 0",
+      "remediation": "Diagonal = eigenvalues ONLY for diagonal matrices"
+    },
+    {
+      "id": "eigen_add_trace",
+      "concept_id": "eigenvalues",
+      "pattern": "trace_confusion",
+      "description": "Student confuses trace (sum of diagonals) with eigenvalues",
+      "explanation": "Trace = SUM of eigenvalues, but individual eigenvalues must be calculated",
+      "remediation": "trace(A) = λ₁ + λ₂ + ... (a check, not the answer)"
+    }
+  ],
+  "question_patterns": [
+    {
+      "question_id": "vec_1",
+      "mappings": {
+        "A": "vec_magnitude_add",
+        "C": "vec_magnitude_add",
+        "D": "vec_dot_multiply"
+      }
+    },
+    {
+      "question_id": "mat_1",
+      "mappings": {
+        "A": "mat_dim_wrong"
+      }
+    },
+    {
+      "question_id": "det_1",
+      "mappings": {
+        "A": "det_add_diagonal",
+        "C": "det_add_diagonal"
+      }
+    }
+  ]
+}

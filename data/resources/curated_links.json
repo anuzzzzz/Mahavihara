@@ -1,0 +1,124 @@
+{
+  "resources": [
+    {
+      "id": "yt_3b1b_vectors",
+      "title": "Vectors | Chapter 1, Essence of linear algebra",
+      "url": "https://youtube.com/watch?v=fNk_zzaMoSs",
+      "source_type": "youtube",
+      "concept_id": "vectors",
+      "difficulty": 1,
+      "duration_minutes": 10,
+      "quality_score": 0.98,
+      "description": "3Blue1Brown's visual introduction to vectors. Beautiful animations that build intuition.",
+      "tags": ["visual", "beginner", "animation", "3b1b"]
+    },
+    {
+      "id": "khan_vectors",
+      "title": "Vector intro for linear algebra",
+      "url": "https://www.khanacademy.org/math/linear-algebra/vectors-and-spaces",
+      "source_type": "interactive",
+      "concept_id": "vectors",
+      "difficulty": 1,
+      "duration_minutes": 30,
+      "quality_score": 0.9,
+      "description": "Khan Academy's complete unit with practice problems and immediate feedback.",
+      "tags": ["practice", "interactive", "comprehensive"]
+    },
+    {
+      "id": "yt_3b1b_matrix",
+      "title": "Linear transformations and matrices | Chapter 3",
+      "url": "https://youtube.com/watch?v=kYB8IZa5AuE",
+      "source_type": "youtube",
+      "concept_id": "matrix_ops",
+      "difficulty": 2,
+      "duration_minutes": 11,
+      "quality_score": 0.98,
+      "description": "Understanding matrices as transformations. This will change how you see matrices forever.",
+      "tags": ["visual", "transformation", "intuition", "3b1b"]
+    },
+    {
+      "id": "yt_mathispower_matrix",
+      "title": "Matrix Multiplication Made Easy",
+      "url": "https://youtube.com/watch?v=2spTnAiQg4M",
+      "source_type": "youtube",
+      "concept_id": "matrix_ops",
+      "difficulty": 1,
+      "duration_minutes": 8,
+      "quality_score": 0.85,
+      "description": "Step-by-step matrix multiplication with lots of examples.",
+      "tags": ["tutorial", "examples", "beginner"]
+    },
+    {
+      "id": "yt_3b1b_determinant",
+      "title": "The determinant | Chapter 6, Essence of linear algebra",
+      "url": "https://youtube.com/watch?v=Ip3X9LOh2dk",
+      "source_type": "youtube",
+      "concept_id": "determinants",
+      "difficulty": 2,
+      "duration_minutes": 10,
+      "quality_score": 0.98,
+      "description": "What determinants REALLY mean geometrically. The 'aha moment' video.",
+      "tags": ["visual", "geometric", "intuition", "3b1b"]
+    },
+    {
+      "id": "yt_organic_det",
+      "title": "Determinants - How to Calculate (2x2, 3x3)",
+      "url": "https://youtube.com/watch?v=21LGVGdpJLE",
+      "source_type": "youtube",
+      "concept_id": "determinants",
+      "difficulty": 1,
+      "duration_minutes": 12,
+      "quality_score": 0.88,
+      "description": "Clear step-by-step calculation methods for 2x2 and 3x3 determinants.",
+      "tags": ["tutorial", "calculation", "step-by-step"]
+    },
+    {
+      "id": "yt_3b1b_inverse",
+      "title": "Inverse matrices, column space and null space | Chapter 7",
+      "url": "https://youtube.com/watch?v=uQhTuRlWMxw",
+      "source_type": "youtube",
+      "concept_id": "inverse_matrix",
+      "difficulty": 2,
+      "duration_minutes": 12,
+      "quality_score": 0.98,
+      "description": "Deep understanding of what matrix inverse means and when it exists.",
+      "tags": ["visual", "comprehensive", "3b1b"]
+    },
+    {
+      "id": "khan_inverse",
+      "title": "Inverse of a 2x2 matrix",
+      "url": "https://www.khanacademy.org/math/algebra-home/alg-matrices/alg-intro-to-matrix-inverses",
+      "source_type": "interactive",
+      "concept_id": "inverse_matrix",
+      "difficulty": 1,
+      "duration_minutes": 20,
+      "quality_score": 0.9,
+      "description": "Learn the formula with practice problems.",
+      "tags": ["practice", "formula", "interactive"]
+    },
+    {
+      "id": "yt_3b1b_eigen",
+      "title": "Eigenvectors and eigenvalues | Chapter 14, Essence of linear algebra",
+      "url": "https://youtube.com/watch?v=PFDu9oVAE-g",
+      "source_type": "youtube",
+      "concept_id": "eigenvalues",
+      "difficulty": 2,
+      "duration_minutes": 17,
+      "quality_score": 0.99,
+      "description": "The most intuitive explanation of eigenvalues you'll find anywhere.",
+      "tags": ["visual", "intuition", "advanced", "3b1b"]
+    },
+    {
+      "id": "yt_maththebeautiful_eigen",
+      "title": "Eigenvalues and Eigenvectors - Explained Visually",
+      "url": "https://youtube.com/watch?v=vs2sRvSzA3o",
+      "source_type": "youtube",
+      "concept_id": "eigenvalues",
+      "difficulty": 3,
+      "duration_minutes": 15,
+      "quality_score": 0.85,
+      "description": "Another perspective with clear visual examples.",
+      "tags": ["visual", "examples", "alternative"]
+    }
+  ]
+}

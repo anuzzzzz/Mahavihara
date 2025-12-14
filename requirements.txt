@@ -1,10 +1,20 @@
-streamlit==1.40.1
-streamlit-agraph==0.0.45
+# Core
 langgraph==0.2.53
 langchain==0.3.9
 langchain-openai==0.2.10
 networkx==3.4.2
+
+# Storage
 redis==5.2.0
-python-dotenv==1.0.1
+
+# API
 fastapi==0.115.0
 uvicorn==0.32.0
+pydantic>=2.0.0
+
+# Utilities
+python-dotenv==1.0.1
+
+# Optional - for enhanced resource discovery
+tavily-python>=0.3.0  # Web search for educational resources
+# youtube-search-python  # YouTube search (future)
