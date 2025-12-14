@@ -51,6 +51,9 @@ class RedisStore:
     def _quiz_key(self, session_id: str) -> str:
         return f"session:{session_id}:quiz"
 
+    def _completed_key(self, session_id: str) -> str:
+        return f"session:{session_id}:completed"
+
     # ==================== Session Management ====================
 
     def create_session(self, session_id: str) -> Dict:
@@ -109,7 +112,8 @@ class RedisStore:
             self._state_key(session_id),
             self._mastery_key(session_id),
             self._answers_key(session_id),
-            self._quiz_key(session_id)
+            self._quiz_key(session_id),
+            self._completed_key(session_id)
         )
 
     # ==================== Mastery Management ====================
@@ -200,6 +204,18 @@ class RedisStore:
         """Reset teaching turns to 0."""
         state_key = self._state_key(session_id)
         self.client.hset(state_key, "teaching_turns", 0)
+
+    # ==================== Completed Concepts ====================
+
+    def get_completed_concepts(self, session_id: str) -> List[str]:
+        """Get list of completed concept IDs."""
+        completed_key = self._completed_key(session_id)
+        return list(self.client.smembers(completed_key))
+
+    def mark_concept_completed(self, session_id: str, concept_id: str):
+        """Mark a concept as completed."""
+        completed_key = self._completed_key(session_id)
+        self.client.sadd(completed_key, concept_id)
 
     # ==================== Advancement Control ====================
 
