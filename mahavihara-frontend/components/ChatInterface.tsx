@@ -5,6 +5,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Send, RotateCcw } from "lucide-react";
 import { Message } from "@/lib/api";
 import AgentThinking from "./AgentThinking";
+import { ThinkingIndicator } from "./ThinkingIndicator";
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -60,20 +61,42 @@ export default function ChatInterface({
     </div>
   );
 
-  // Mastery bar component
-  const MasteryBar = () => (
-    <div className="flex gap-2 text-xs font-mono mb-4 flex-wrap">
-      {Object.entries(mastery).map(([concept, score]) => {
-        const percent = Math.round(score * 100);
-        const color = score >= 0.6 ? "text-green-400" : score < 0.4 ? "text-red-400" : "text-yellow-400";
-        return (
-          <span key={concept} className={`${color}`}>
-            {concept.slice(0, 3).toUpperCase()}:{percent}%
-          </span>
-        );
-      })}
-    </div>
-  );
+  // Mastery gauge component
+  const MasteryGauge = () => {
+    const scores = Object.values(mastery);
+    const overallScore = scores.length > 0
+      ? scores.reduce((a, b) => a + b, 0) / scores.length
+      : 0.5;
+
+    return (
+      <div className="mb-4 p-3 bg-black/40 backdrop-blur-md rounded-xl border border-white/10">
+        <div className="flex justify-between text-xs text-zinc-400 uppercase font-bold tracking-wider mb-2">
+          <span>Overall Mastery</span>
+          <span>{Math.round(overallScore * 100)}%</span>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-1000 ease-out"
+            style={{ width: `${overallScore * 100}%` }}
+          />
+        </div>
+
+        {/* Individual concepts */}
+        <div className="flex gap-2 mt-2 text-[10px] text-zinc-500">
+          {Object.entries(mastery).map(([concept, score]) => {
+            const color = score >= 0.6 ? "text-green-400" : score < 0.4 ? "text-red-400" : "text-zinc-400";
+            return (
+              <span key={concept} className={color}>
+                {concept.slice(0, 3).toUpperCase()}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col h-full bg-zinc-900 rounded-lg border border-zinc-800">
@@ -96,7 +119,7 @@ export default function ChatInterface({
 
       {/* Mastery Display */}
       <div className="px-4 pt-4">
-        <MasteryBar />
+        <MasteryGauge />
       </div>
 
       {/* Agent Thinking */}
@@ -122,17 +145,7 @@ export default function ChatInterface({
             </div>
           </div>
         ))}
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-zinc-800 rounded-lg px-4 py-3">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" />
-                <span className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce delay-100" />
-                <span className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce delay-200" />
-              </div>
-            </div>
-          </div>
-        )}
+        {isLoading && <ThinkingIndicator />}
         <div ref={messagesEndRef} />
       </div>
 
@@ -152,8 +165,8 @@ export default function ChatInterface({
             onChange={(e) => setInput(e.target.value)}
             placeholder={
               phase === "diagnostic" || phase === "verifying"
-                ? "Type A, B, C, or D..."
-                : "Type your response..."
+                ? "Type your answer (A, B, C, D)..."
+                : "Ask a question or explain your thinking..."
             }
             className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3
                        text-white placeholder-zinc-500 font-mono text-sm

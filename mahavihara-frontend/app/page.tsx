@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
+import Confetti from "react-confetti";
 import ChatInterface from "@/components/ChatInterface";
 import Sidebar from "@/components/Sidebar";
 import {
@@ -33,6 +34,7 @@ export default function Home() {
   const [graphEdges, setGraphEdges] = useState<GraphEdge[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [rootCause, setRootCause] = useState<string | undefined>();
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const initSession = useCallback(async () => {
     try {
@@ -84,6 +86,17 @@ export default function Home() {
 
       setMessages((prev) => [...prev, ...response.messages]);
       setPhase(response.phase);
+
+      // Check if any concept just crossed 0.6 threshold
+      const prevMastery = mastery;
+      const newMastery = response.mastery;
+      Object.keys(newMastery).forEach((concept) => {
+        if ((prevMastery[concept] || 0) < 0.6 && newMastery[concept] >= 0.6) {
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 5000);
+        }
+      });
+
       setMastery(response.mastery);
       if (response.root_cause) {
         setRootCause(response.root_cause);
@@ -124,6 +137,8 @@ export default function Home() {
 
   return (
     <main className="h-screen w-screen bg-[#0A0A0A] text-white flex overflow-hidden">
+      {showConfetti && <Confetti numberOfPieces={200} recycle={false} />}
+
       {/* Sidebar */}
       <Sidebar />
 
