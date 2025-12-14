@@ -1,7 +1,20 @@
+"""
+LangGraph Agent for Mahavihara AI Tutor
 
+Implements a state machine with phases:
+    diagnostic -> analyzing -> teaching -> verifying -> complete
+    
+Key Features:
+    - Diagnoses knowledge gaps through 5 questions
+    - Traces root cause through knowledge graph
+    - Teaches using structured lessons + GPT dialogue
+    - Verifies with UNSEEN questions (no memorization)
+    - Handles MULTIPLE weak concepts in queue
+"""
 
 import os
-from typing import TypedDict, Literal, Optional, List, Annotated
+import random
+from typing import TypedDict, Literal, Optional, List
 from dotenv import load_dotenv
 
 from langgraph.graph import StateGraph, END
@@ -20,11 +33,11 @@ class AgentState(TypedDict):
     session_id: str
     phase: Literal["diagnostic", "analyzing", "teaching", "verifying", "complete"]
     messages: List  # Chat history
-    current_question: Optional[dict]  # Current question being asked
+    current_question: Optional[dict]
     mastery: dict  # concept_id -> score
-    weak_concepts: List[str]  # Concepts with low mastery
-    root_cause: Optional[str]  # The identified root cause concept
-    teaching_turns: int  # Count of teaching exchanges
+    weak_concepts: List[str]
+    root_cause: Optional[str]
+    teaching_turns: int
 
 
 # ==================== Initialize Components ====================
@@ -32,7 +45,7 @@ class AgentState(TypedDict):
 kg = KnowledgeGraph()
 store = RedisStore()
 llm = ChatOpenAI(
-    model="gpt-4o-mini",  # Fast and cheap, good for hackathon
+    model="gpt-4o-mini",
     temperature=0.7
 )
 
@@ -42,21 +55,16 @@ llm = ChatOpenAI(
 def diagnostic_node(state: AgentState) -> AgentState:
     """
     Ask diagnostic questions to assess student's knowledge.
-    
-    Picks one medium-difficulty question from each concept.
-    After 5 questions, moves to analyzing phase.
+    One medium-difficulty question from each concept.
     """
     session_id = state["session_id"]
     questions_asked = store.get_questions_asked(session_id)
     
-    # Get diagnostic question set
     diagnostic_set = kg.get_diagnostic_set()
     
     if questions_asked < len(diagnostic_set):
-        # Get next question
         question = diagnostic_set[questions_asked]
         
-        # Format question for display
         options_text = "\n".join([
             f"  {chr(65+i)}. {opt}" 
             for i, opt in enumerate(question["options"])
@@ -73,7 +81,6 @@ def diagnostic_node(state: AgentState) -> AgentState:
 def process_answer_node(state: AgentState) -> AgentState:
     """
     Process the student's answer to a diagnostic question.
-    
     Updates mastery scores and records the answer.
     """
     session_id = state["session_id"]
@@ -82,32 +89,31 @@ def process_answer_node(state: AgentState) -> AgentState:
     if not question:
         return state
     
-    # Get the last human message (the answer)
     last_message = state["messages"][-1]
     if not isinstance(last_message, HumanMessage):
         return state
     
     answer = last_message.content.strip().upper()
     
-    # Convert A/B/C/D to index
+    # Handle answers like "A" or "a" or "A." or "Option A"
     answer_map = {"A": 0, "B": 1, "C": 2, "D": 3}
-    answer_idx = answer_map.get(answer, -1)
+    answer_idx = -1
+    for key in answer_map:
+        if key in answer.upper():
+            answer_idx = answer_map[key]
+            break
     
-    # Check if correct
     is_correct = (answer_idx == question["correct"])
     concept_id = question["concept_id"]
     
-    # Update mastery in Redis
     new_score = store.update_mastery(session_id, concept_id, is_correct)
     state["mastery"][concept_id] = new_score
     
-    # Record answer
     store.record_answer(session_id, question["id"], concept_id, is_correct)
     store.increment_questions_asked(session_id)
     
-    # Feedback message
     if is_correct:
-        feedback = f"✅ Correct!"
+        feedback = "✅ Correct!"
     else:
         correct_option = chr(65 + question["correct"])
         feedback = f"❌ Incorrect. The answer was **{correct_option}**.\n\n💡 *{question['hint']}*"
@@ -120,45 +126,54 @@ def process_answer_node(state: AgentState) -> AgentState:
 
 def analyze_node(state: AgentState) -> AgentState:
     """
-    Analyze diagnostic results and find root cause.
-    
-    Uses the knowledge graph to trace back from weak concepts
-    to find the earliest prerequisite that's weak.
+    Analyze diagnostic results and find ALL weak concepts.
+    Queues them for sequential teaching.
     """
     session_id = state["session_id"]
     mastery = state["mastery"]
     
-    # Find weak concepts (mastery < 0.6)
+    # Find ALL weak concepts (mastery < 0.6)
     weak_concepts = [c for c, score in mastery.items() if score < 0.6]
     state["weak_concepts"] = weak_concepts
     
     if not weak_concepts:
-        # All concepts strong! Skip to complete
         state["messages"].append(AIMessage(content="🎉 **Excellent!** You've demonstrated strong understanding across all concepts!"))
         state["phase"] = "complete"
         store.set_phase(session_id, "complete")
         return state
     
-    # Find the root cause - trace back to earliest weak prerequisite
-    # Start from the most advanced weak concept
-    most_advanced_weak = weak_concepts[-1]  # Last in topological order
+    # Store ALL weak concepts in queue for sequential teaching
+    store.set_weak_concepts_queue(session_id, weak_concepts)
+    
+    # Find root cause (earliest weak prerequisite)
+    most_advanced_weak = weak_concepts[-1]
     root_cause = kg.trace_root_cause(most_advanced_weak, mastery)
     
     state["root_cause"] = root_cause
     store.set_root_cause(session_id, root_cause)
+    store.reset_teaching_turns(session_id)
+    store.reset_verify_progress(session_id)
     
-    # Get concept name for display
     concept_data = kg.get_concept(root_cause)
     concept_name = concept_data["name"]
     
-    # Analysis message
-    analysis_msg = f"""📊 **Diagnosis Complete!**
+    # Show count of weak concepts
+    if len(weak_concepts) > 1:
+        analysis_msg = f"""📊 **Diagnosis Complete!**
 
-I've analyzed your responses and found some knowledge gaps.
+I've analyzed your responses and found **{len(weak_concepts)} knowledge gaps**.
+
+🔍 **Starting with:** **{concept_name}**
+
+This is the foundational concept we need to strengthen first. After mastering this, we'll move to the next."""
+    else:
+        analysis_msg = f"""📊 **Diagnosis Complete!**
+
+I've analyzed your responses and found a knowledge gap.
 
 🔍 **Root Cause Identified:** **{concept_name}**
 
-This is the foundational concept we need to strengthen. Let me help you understand it better through some guided questions."""
+Let me help you understand this concept better."""
     
     state["messages"].append(AIMessage(content=analysis_msg))
     state["phase"] = "teaching"
@@ -171,27 +186,26 @@ This is the foundational concept we need to strengthen. Let me help you understa
 def teach_node(state: AgentState) -> AgentState:
     """
     Teach the root cause concept.
-
+    
     FLOW:
-    - Turn 0: Show the structured mini-lesson from JSON
-    - Turn 1+: Interactive GPT dialogue
+    - Turn 0: Show structured mini-lesson from JSON
+    - Turn 1+: Interactive GPT dialogue with DETAILED explanations
     """
     session_id = state["session_id"]
     root_cause = state["root_cause"]
     concept_data = kg.get_concept(root_cause)
-
-    # Get teaching turns from Redis (persisted!)
+    
     teaching_turns = store.get_teaching_turns(session_id)
-
-    # TURN 0: Show the pre-written lesson FIRST
+    
+    # TURN 0: Show pre-written lesson FIRST
     if teaching_turns == 0:
         lesson = concept_data.get("lesson", concept_data.get("explanation", ""))
         if lesson:
-            lesson_with_prompt = lesson + "\n\n---\n💬 *Does this make sense? Ask me anything or say 'yes' to continue.*"
+            lesson_with_prompt = lesson + "\n\n---\n💬 *Does this make sense? Ask me anything, or say \"quiz me\" when you're ready to practice!*"
             state["messages"].append(AIMessage(content=lesson_with_prompt))
             store.increment_teaching_turns(session_id)
             return state
-
+    
     # TURN 1+: Interactive GPT dialogue
     system_prompt = f"""You are a warm, encouraging tutor helping a student understand "{concept_data['name']}".
 
@@ -201,58 +215,96 @@ The student has already read this lesson:
 ---
 
 HOW TO RESPOND:
-- If they say "yes" / "got it" / "makes sense" → Say "Great!" and move on
-- If they say "no" / "confused" → Re-explain simpler with a NEW analogy
-- If they ask a question (like "what is X?") → Answer it DIRECTLY and simply
-- If they attempt an answer → Give feedback, correct gently if needed
 
-RULES:
-- Be SHORT (2-3 sentences max)
-- Be warm ("Great question!", "Good thinking!")
-- Answer questions DIRECTLY - don't deflect with more questions
-- Use everyday analogies (spreadsheets, grids, tables)
+**If they say "yes" / "got it" / "makes sense" / "okay":**
+→ Brief response: "Great! Feel free to ask questions, or say 'quiz me' when you're ready to practice!"
 
-BAD: "What do you think a matrix is?" (when they asked YOU)
-GOOD: "A matrix is just a table of numbers, like a spreadsheet! Each cell has a value."
-"""
+**If they say "no" / "confused" / "don't understand" / "what?" / "huh?":**
+→ Give a DETAILED explanation:
+  - Start with a completely different analogy (everyday objects like spreadsheets, arrows, shadows, stretching rubber)
+  - Break it down step-by-step
+  - Give a concrete example with actual numbers
+  - Explain WHY it works that way, not just WHAT it is
+  - End by asking if this new explanation helps
+
+**If they ask a specific question like "what is X?" or "why does Y happen?" or "how do I Z?":**
+→ Give a THOROUGH answer:
+  - First, directly answer their question in simple terms
+  - Then explain the concept in more depth
+  - Provide 1-2 concrete examples with numbers
+  - Connect it to concepts they already know
+  - If relevant, show the formula and explain each part
+
+**If they attempt an answer or share their thinking:**
+→ Acknowledge their effort warmly
+→ If correct: celebrate and reinforce why they're right
+→ If incorrect: gently correct with a clear explanation of the right answer
+
+IMPORTANT GUIDELINES:
+- Be warm and encouraging throughout ("Great question!", "That's a really common confusion!", "Good thinking!")
+- Use everyday analogies they can visualize (spreadsheets, arrows, stretching, shadows, transformations)
+- Build from simple → complex
+- Use **bold** for key terms
+- Use concrete numbers in examples (don't say "some matrix", say "[[2,0],[0,3]]")
+
+RESPONSE LENGTH:
+- BRIEF for simple confirmations ("Great!", "Exactly right!")
+- DETAILED (multiple paragraphs) for explanations, questions, and confusion
+- Don't be afraid to write 4-6 paragraphs if they're genuinely confused
+
+FORMATTING:
+- Use **bold** for emphasis and key terms
+- Use bullet points (•) or dashes (-) for lists
+- Do NOT use LaTeX (\\[ \\] or $ $) - it won't render
+- Write math inline as plain text: "det = ad - bc" not "\\det = ad - bc"
+- For matrices, use simple notation: [[a, b], [c, d]] or write them out
+- Use → for arrows and = for equations
+
+NEVER:
+- Never deflect with "What do you think?" when they asked YOU a question
+- Never give vague answers like "it depends" without explaining what it depends on
+- Never assume they understand jargon - define terms when you use them"""
 
     gpt_messages = [SystemMessage(content=system_prompt)]
-
-    # Add recent conversation history
-    for msg in state["messages"][-6:]:
+    
+    for msg in state["messages"][-8:]:  # Increased context window
         if isinstance(msg, HumanMessage):
             gpt_messages.append(msg)
         elif isinstance(msg, AIMessage):
             gpt_messages.append(msg)
-
+    
     response = llm.invoke(gpt_messages)
     state["messages"].append(AIMessage(content=response.content))
     store.increment_teaching_turns(session_id)
-
+    
     return state
 
 
 def verify_node(state: AgentState) -> AgentState:
     """
-    Verify understanding with a question on the root cause concept.
-    
-    Asks an easy question first, then medium if they get it right.
+    Verify understanding with a question the student HASN'T seen.
+    Picks difficulty based on current mastery.
     """
+    session_id = state["session_id"]
     root_cause = state["root_cause"]
     mastery = state["mastery"]
     current_score = mastery.get(root_cause, 0.5)
     
-    # Pick difficulty based on current mastery
+    # Get questions already asked
+    asked_ids = store.get_asked_questions(session_id)
+    
+    # Pick difficulty based on mastery
     if current_score < 0.4:
-        difficulty = 1  # Easy
+        preferred_difficulty = 1  # Easy
+    elif current_score < 0.6:
+        preferred_difficulty = 2  # Medium
     else:
-        difficulty = 2  # Medium
+        preferred_difficulty = 3  # Hard
     
-    questions = kg.get_questions(root_cause, difficulty=difficulty)
+    # Get a random UNSEEN question
+    question = kg.get_random_unseen_question(root_cause, asked_ids, preferred_difficulty)
     
-    if questions:
-        question = questions[0]
-        
+    if question:
         options_text = "\n".join([
             f"  {chr(65+i)}. {opt}" 
             for i, opt in enumerate(question["options"])
@@ -266,6 +318,9 @@ def verify_node(state: AgentState) -> AgentState:
         
         state["messages"].append(AIMessage(content=message))
         state["current_question"] = question
+    else:
+        # No questions available (shouldn't happen)
+        state["messages"].append(AIMessage(content="Great progress! Let's continue learning."))
     
     return state
 
@@ -273,9 +328,7 @@ def verify_node(state: AgentState) -> AgentState:
 def process_verify_answer_node(state: AgentState) -> AgentState:
     """
     Process answer to verification question.
-    
-    Updates mastery and decides whether to continue teaching
-    or mark as complete.
+    Updates mastery and decides next step.
     """
     session_id = state["session_id"]
     question = state["current_question"]
@@ -284,29 +337,34 @@ def process_verify_answer_node(state: AgentState) -> AgentState:
     if not question:
         return state
     
-    # Get the answer
     last_message = state["messages"][-1]
     if not isinstance(last_message, HumanMessage):
         return state
     
     answer = last_message.content.strip().upper()
+    
+    # Parse answer
     answer_map = {"A": 0, "B": 1, "C": 2, "D": 3}
-    answer_idx = answer_map.get(answer, -1)
+    answer_idx = -1
+    for key in answer_map:
+        if key in answer.upper():
+            answer_idx = answer_map[key]
+            break
     
     is_correct = (answer_idx == question["correct"])
     
-    # Update mastery
     new_score = store.update_mastery(session_id, root_cause, is_correct)
     state["mastery"][root_cause] = new_score
     
-    # Record answer
     store.record_answer(session_id, question["id"], root_cause, is_correct)
     
+    concept_name = kg.get_concept(root_cause)['name']
+    
     if is_correct:
-        state["messages"].append(AIMessage(content=f"✅ **Correct!** Great job! Your mastery of {kg.get_concept(root_cause)['name']} is now at {new_score:.0%}."))
+        state["messages"].append(AIMessage(content=f"✅ **Correct!** Great job! Your mastery of {concept_name} is now at {new_score:.0%}."))
     else:
         correct_option = chr(65 + question["correct"])
-        state["messages"].append(AIMessage(content=f"❌ Not quite. The answer was **{correct_option}**.\n\n{question['explanation']}"))
+        state["messages"].append(AIMessage(content=f"❌ Not quite. The answer was **{correct_option}**.\n\n💡 {question['explanation']}"))
     
     state["current_question"] = None
     
@@ -349,7 +407,6 @@ def create_agent_graph():
     
     graph = StateGraph(AgentState)
     
-    # Add nodes
     graph.add_node("diagnostic", diagnostic_node)
     graph.add_node("process_answer", process_answer_node)
     graph.add_node("analyze", analyze_node)
@@ -357,14 +414,11 @@ def create_agent_graph():
     graph.add_node("verify", verify_node)
     graph.add_node("process_verify_answer", process_verify_answer_node)
     
-    # Set entry point
     graph.set_entry_point("diagnostic")
     
-    # Add edges
     graph.add_edge("diagnostic", "wait_for_input")
     graph.add_edge("process_answer", "route_diagnostic")
     
-    # Conditional routing after diagnostic
     graph.add_conditional_edges(
         "route_diagnostic",
         route_after_diagnostic,
@@ -379,7 +433,6 @@ def create_agent_graph():
     graph.add_edge("verify", "wait_for_input")
     graph.add_edge("process_verify_answer", "route_verify")
     
-    # Conditional routing after verify
     graph.add_conditional_edges(
         "route_verify",
         route_after_verify,
@@ -397,28 +450,20 @@ def create_agent_graph():
 class TutorAgent:
     """
     High-level interface for the tutor agent.
-    
     Handles session management and message processing.
     """
     
     def __init__(self):
-        self.graph = None  # Lazy initialization
+        self.graph = None
     
     def _ensure_graph(self):
-        """Initialize graph if needed."""
         if self.graph is None:
             self.graph = create_agent_graph()
     
     def start_session(self, session_id: str) -> dict:
-        """
-        Start a new tutoring session.
-        
-        Returns the first diagnostic question.
-        """
-        # Create session in Redis
+        """Start a new tutoring session. Returns first diagnostic question."""
         session_data = store.get_or_create_session(session_id)
         
-        # Initialize state
         state = AgentState(
             session_id=session_id,
             phase="diagnostic",
@@ -430,7 +475,6 @@ class TutorAgent:
             teaching_turns=0
         )
         
-        # Run diagnostic node to get first question
         state = diagnostic_node(state)
         
         return {
@@ -443,20 +487,12 @@ class TutorAgent:
     def process_message(self, session_id: str, user_message: str) -> dict:
         """
         Process a user message and return the agent's response.
-        
-        Args:
-            session_id: Session identifier
-            user_message: The user's input
-            
-        Returns:
-            Dict with messages, phase, mastery, etc.
+        Main routing logic based on current phase.
         """
-        # Get session state from Redis
         session_data = store.get_or_create_session(session_id)
         phase = store.get_phase(session_id)
         root_cause = store.get_root_cause(session_id)
         
-        # Build current state
         state = AgentState(
             session_id=session_id,
             phase=phase,
@@ -470,81 +506,145 @@ class TutorAgent:
         
         response_messages = []
         
-        # Route based on phase
+        # ==================== DIAGNOSTIC PHASE ====================
         if phase == "diagnostic":
-            # Get current question from diagnostic set
             questions_asked = store.get_questions_asked(session_id)
             diagnostic_set = kg.get_diagnostic_set()
             
             if questions_asked < len(diagnostic_set):
                 state["current_question"] = diagnostic_set[questions_asked]
             
-            # Process answer
             state = process_answer_node(state)
-            response_messages.extend(state["messages"][1:])  # Skip the human message
+            response_messages.extend(state["messages"][1:])
             
-            # Check if we should analyze
             questions_asked = store.get_questions_asked(session_id)
             
             if questions_asked >= 5:
-                # Move to analysis
                 state["mastery"] = store.get_mastery(session_id)
                 state = analyze_node(state)
                 response_messages.extend(state["messages"][len(response_messages)+1:])
                 
                 if state["phase"] == "teaching":
-                    # Start teaching
                     state = teach_node(state)
                     response_messages.append(state["messages"][-1])
             else:
-                # Next diagnostic question
                 state = diagnostic_node(state)
                 response_messages.append(state["messages"][-1])
         
+        # ==================== TEACHING PHASE ====================
         elif phase == "teaching":
-            # Process teaching dialogue
-            state = teach_node(state)
-            response_messages.append(state["messages"][-1])
-
-            # Check if we should move to verification (after 3+ teaching exchanges)
+            user_msg_lower = user_message.lower().strip()
+            
+            # Check if student wants to be quizzed
+            quiz_triggers = ["quiz me", "test me", "i'm ready", "im ready", "ready", 
+                          "let's practice", "lets practice", "check my understanding",
+                          "practice", "try a question", "give me a question"]
+            wants_quiz = any(trigger in user_msg_lower for trigger in quiz_triggers)
+            
             teaching_turns = store.get_teaching_turns(session_id)
-
-            if teaching_turns >= 3:
-                # Move to verify
+            
+            if wants_quiz and teaching_turns >= 1:
+                # Student requested quiz - go to verify
                 store.set_phase(session_id, "verifying")
+                store.reset_verify_progress(session_id)
                 state = verify_node(state)
                 response_messages.append(state["messages"][-1])
                 state["phase"] = "verifying"
-            # else: stay in teaching phase, wait for more dialogue
-        
-        elif phase == "verifying":
-            # Get the verification question
-            mastery = store.get_mastery(session_id)
-            current_score = mastery.get(root_cause, 0.5)
-            difficulty = 1 if current_score < 0.4 else 2
-            questions = kg.get_questions(root_cause, difficulty=difficulty)
-            
-            if questions:
-                state["current_question"] = questions[0]
-            
-            # Process answer
-            state = process_verify_answer_node(state)
-            response_messages.extend(state["messages"][1:])
-            
-            # Check mastery
-            new_mastery = store.get_mastery(session_id)
-            
-            if new_mastery.get(root_cause, 0) >= 0.6:
-                # Complete!
-                store.set_phase(session_id, "complete")
-                response_messages.append(AIMessage(content=f"🎉 **Congratulations!** You've mastered **{kg.get_concept(root_cause)['name']}**! The knowledge gap has been filled."))
-                state["phase"] = "complete"
             else:
-                # Back to teaching
-                store.set_phase(session_id, "teaching")
-                state["phase"] = "teaching"
+                # Continue teaching dialogue
                 state = teach_node(state)
                 response_messages.append(state["messages"][-1])
+                
+                # After 5+ turns, gently suggest quiz
+                teaching_turns = store.get_teaching_turns(session_id)
+                if teaching_turns >= 5 and not wants_quiz:
+                    response_messages.append(AIMessage(content="\n💡 *Tip: Say \"quiz me\" when you're ready to test your understanding!*"))
+        
+        # ==================== VERIFYING PHASE ====================
+        elif phase == "verifying":
+            mastery = store.get_mastery(session_id)
+            current_score = mastery.get(root_cause, 0.5)
+
+            # Get an unseen question
+            asked_ids = store.get_asked_questions(session_id)
+            difficulty = 1 if current_score < 0.4 else 2
+            question = kg.get_random_unseen_question(root_cause, asked_ids, difficulty)
+
+            if question:
+                state["current_question"] = question
+
+            state = process_verify_answer_node(state)
+            response_messages.extend(state["messages"][1:])
+
+            # Get verification progress and update
+            verify_progress = store.get_verify_progress(session_id)
+            last_answer_correct = state["mastery"].get(root_cause, 0) > current_score
+            store.update_verify_progress(session_id, last_answer_correct)
+
+            questions_asked = verify_progress["asked"] + 1
+            correct_count = verify_progress["correct"] + (1 if last_answer_correct else 0)
+
+            REQUIRED_QUESTIONS = 3
+            REQUIRED_CORRECT = 2
+
+            if questions_asked < REQUIRED_QUESTIONS:
+                # Ask another verification question
+                response_messages.append(AIMessage(
+                    content=f"*({correct_count}/{questions_asked} correct so far)*"
+                ))
+                state = verify_node(state)
+                response_messages.append(state["messages"][-1])
+            else:
+                # 3 questions answered - evaluate
+                store.reset_verify_progress(session_id)
+
+                if correct_count >= REQUIRED_CORRECT:
+                    # PASSED! Check if more concepts in queue
+                    weak_queue = store.get_weak_concepts_queue(session_id)
+
+                    # Remove current concept from queue
+                    if root_cause in weak_queue:
+                        weak_queue.remove(root_cause)
+                        store.set_weak_concepts_queue(session_id, weak_queue)
+
+                    if weak_queue:
+                        # More concepts to learn!
+                        next_concept = weak_queue[0]
+                        store.set_root_cause(session_id, next_concept)
+                        store.reset_teaching_turns(session_id)
+                        store.set_phase(session_id, "teaching")
+
+                        concept_name = kg.get_concept(next_concept)["name"]
+                        mastered_name = kg.get_concept(root_cause)["name"]
+
+                        response_messages.append(AIMessage(
+                            content=f"🎉 **Great job!** You got {correct_count}/3 correct and mastered **{mastered_name}**!\n\n📚 **Next up:** **{concept_name}**\n\n*{len(weak_queue)} concept(s) remaining*"
+                        ))
+
+                        # Start teaching next concept
+                        state["root_cause"] = next_concept
+                        state = teach_node(state)
+                        response_messages.append(state["messages"][-1])
+                        state["phase"] = "teaching"
+                    else:
+                        # All done!
+                        store.set_phase(session_id, "complete")
+                        response_messages.append(AIMessage(
+                            content=f"🎉 **Congratulations!** You got {correct_count}/3 correct and mastered all the concepts! Your knowledge gaps have been filled. 🏆"
+                        ))
+                        state["phase"] = "complete"
+                else:
+                    # FAILED - back to teaching
+                    store.set_phase(session_id, "teaching")
+                    state["phase"] = "teaching"
+
+                    response_messages.append(AIMessage(
+                        content=f"📚 You got {correct_count}/3 correct. Let's review this concept a bit more before trying again."
+                    ))
+
+                    store.reset_teaching_turns(session_id)
+                    state = teach_node(state)
+                    response_messages.append(state["messages"][-1])
         
         # Get updated mastery
         final_mastery = store.get_mastery(session_id)

@@ -3,6 +3,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Send, RotateCcw } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { Message } from "@/lib/api";
 import AgentThinking from "./AgentThinking";
 import { ThinkingIndicator } from "./ThinkingIndicator";
@@ -139,9 +140,9 @@ export default function ChatInterface({
                   : "bg-zinc-800 text-zinc-100"
               }`}
             >
-              <pre className="whitespace-pre-wrap text-sm font-mono font-normal break-words">
-                {msg.content}
-              </pre>
+              <div className="prose prose-invert prose-sm max-w-none">
+                <ReactMarkdown>{msg.content}</ReactMarkdown>
+              </div>
             </div>
           </div>
         ))}

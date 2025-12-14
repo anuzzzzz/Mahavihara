@@ -1,4 +1,14 @@
+"""
+Knowledge Graph - Manages the concept dependency graph and questions.
+
+Uses networkx for graph operations:
+- DAG traversal
+- Prerequisite finding
+- Root cause tracing
+"""
+
 import json
+import random
 import networkx as nx
 from typing import List, Dict, Optional
 
@@ -9,12 +19,14 @@ class KnowledgeGraph:
         with open(data_path, 'r') as f:
             self.data = json.load(f)
         
+        # DiGraph = Directed Graph (arrows have direction)
         self.graph = nx.DiGraph()
-        self.concepts = {}  # id -> concept data
         
-        # Build the graph
+        # Dictionary for quick lookup: concept_id -> full concept data
+        self.concepts = {}
+        
         self._build_graph()
-    
+
     def _build_graph(self):
         """Create nodes and edges from concept data."""
         for concept in self.data["concepts"]:
@@ -26,21 +38,13 @@ class KnowledgeGraph:
             for prereq in concept["prerequisites"]:
                 self.graph.add_edge(prereq, cid)
 
-    
     def get_concept(self, concept_id: str) -> Optional[Dict]:
         """
         Get full concept data by ID.
         
-        Args:
-            concept_id: e.g., "derivatives"
-            
         Returns:
-            Full concept dict with name, questions, etc.
+            Full concept dict with name, questions, lesson, etc.
             None if concept doesn't exist.
-            
-        Example:
-            >>> kg.get_concept("limits")
-            {"id": "limits", "name": "Limits", "prerequisites": [], ...}
         """
         return self.concepts.get(concept_id, None)
 
@@ -50,16 +54,6 @@ class KnowledgeGraph:
         
         Uses networkx predecessors() - returns nodes that have 
         edges pointing TO this node.
-        
-        Args:
-            concept_id: e.g., "chain_rule"
-            
-        Returns:
-            List of immediate prerequisite IDs
-            
-        Example:
-            >>> kg.get_prerequisites("chain_rule")
-            ["derivatives"]  # Just the direct parent
         """
         return list(self.graph.predecessors(concept_id))
 
@@ -69,19 +63,9 @@ class KnowledgeGraph:
         
         Uses networkx ancestors() - finds all nodes that can 
         reach this node by following edges.
-        
-        Args:
-            concept_id: e.g., "maxima_minima"
-            
-        Returns:
-            List of ALL ancestor concept IDs
-            
-        Example:
-            >>> kg.get_all_ancestors("maxima_minima")
-            ["chain_rule", "derivatives", "continuity", "limits"]
         """
         return list(nx.ancestors(self.graph, concept_id))
-    
+
     def trace_root_cause(self, failed_concept: str, mastery: Dict[str, float]) -> str:
         """
         THE KEY ALGORITHM: Find the root cause of failure.
@@ -89,46 +73,29 @@ class KnowledgeGraph:
         When a student fails a concept, trace back through prerequisites
         to find the EARLIEST weak concept (lowest in the dependency chain).
         
-        Logic:
-        1. Get all ancestors of the failed concept
-        2. Sort them in topological order (roots first)
-        3. Find the first one with low mastery (< 0.6)
-        4. That's the root cause!
-        
         Args:
             failed_concept: The concept the student just failed
             mastery: Dict of concept_id -> mastery score (0.0 to 1.0)
             
         Returns:
             concept_id of the root cause (earliest weak prerequisite)
-            
-        Example:
-            Student fails "maxima_minima" with mastery:
-            {"limits": 0.3, "continuity": 0.5, "derivatives": 0.4, ...}
-            
-            Returns: "limits" (the earliest weak concept)
         """
-        # Get all ancestors (prerequisites) of the failed concept
         ancestors = self.get_all_ancestors(failed_concept)
         
-        # If no ancestors, the failed concept itself is the root cause
         if not ancestors:
             return failed_concept
         
         # Topological sort: orders nodes so prerequisites come BEFORE dependents
-        # Example: [limits, continuity, derivatives, chain_rule, maxima_minima]
         topo_order = list(nx.topological_sort(self.graph))
         
         # Filter to only ancestors, maintaining topological order
-        # This gives us ancestors from root → failed concept
         ancestors_sorted = [c for c in topo_order if c in ancestors]
         
         # Find the FIRST (earliest) ancestor with weak mastery
-        MASTERY_THRESHOLD = 0.6  # Below this = weak understanding
+        MASTERY_THRESHOLD = 0.6
         
         for concept_id in ancestors_sorted:
             if mastery.get(concept_id, 0.5) < MASTERY_THRESHOLD:
-                # Found it! This is the root cause
                 return concept_id
         
         # If all ancestors are strong, the problem is the concept itself
@@ -144,10 +111,6 @@ class KnowledgeGraph:
             
         Returns:
             List of question dicts
-            
-        Example:
-            >>> kg.get_questions("limits", difficulty=1)
-            [{"id": "lim_e1", "text": "...", ...}, {"id": "lim_e2", ...}]
         """
         concept = self.get_concept(concept_id)
         
@@ -156,102 +119,107 @@ class KnowledgeGraph:
         
         questions = concept.get("questions", [])
         
-        # If no difficulty filter, return all questions
         if difficulty is None:
             return questions
         
-        # Filter by difficulty level
         return [q for q in questions if q["difficulty"] == difficulty]
+
+    def get_unseen_questions(self, concept_id: str, asked_ids: List[str], difficulty: Optional[int] = None) -> List[Dict]:
+        """
+        Get questions that haven't been asked yet.
+        
+        Args:
+            concept_id: The concept to get questions for
+            asked_ids: List of question IDs already asked
+            difficulty: Optional difficulty filter
+            
+        Returns:
+            List of unseen questions
+        """
+        all_questions = self.get_questions(concept_id, difficulty)
+        return [q for q in all_questions if q["id"] not in asked_ids]
+
+    def get_random_unseen_question(self, concept_id: str, asked_ids: List[str], preferred_difficulty: int = 2) -> Optional[Dict]:
+        """
+        Get a random unseen question, with fallback logic.
+        
+        Priority:
+        1. Unseen questions at preferred difficulty
+        2. Unseen questions at any difficulty
+        3. Any question (if all seen - rare)
+        
+        Args:
+            concept_id: The concept to get questions for
+            asked_ids: List of question IDs already asked
+            preferred_difficulty: Preferred difficulty level
+            
+        Returns:
+            A question dict, or None if no questions exist
+        """
+        # Try preferred difficulty first
+        questions = self.get_unseen_questions(concept_id, asked_ids, preferred_difficulty)
+        
+        # Fallback to any unseen question
+        if not questions:
+            questions = self.get_unseen_questions(concept_id, asked_ids)
+        
+        # Fallback to any question (all seen)
+        if not questions:
+            questions = self.get_questions(concept_id)
+        
+        if questions:
+            return random.choice(questions)
+        
+        return None
 
     def get_diagnostic_set(self) -> List[Dict]:
         """
         Get one MEDIUM difficulty question from each concept for initial diagnosis.
         
-        This creates a balanced 5-question diagnostic test that covers
-        all concepts without being too easy or too hard.
-        
         Returns:
             List of 5 questions (one per concept) with concept_id attached
-            
-        Example:
-            >>> kg.get_diagnostic_set()
-            [
-                {"concept_id": "limits", "id": "lim_m1", "text": "...", ...},
-                {"concept_id": "continuity", "id": "cont_m1", ...},
-                ...
-            ]
         """
         diagnostic_questions = []
         
-        # Get one medium question from each concept
         for concept_id, concept in self.concepts.items():
-            # Get medium difficulty questions (difficulty = 2)
             medium_questions = self.get_questions(concept_id, difficulty=2)
             
             if medium_questions:
-                # Take the first medium question
-                question = medium_questions[0].copy()  # Copy to avoid mutating original
-                
-                # Attach concept_id so we know which concept this tests
+                question = medium_questions[0].copy()
                 question["concept_id"] = concept_id
-                
                 diagnostic_questions.append(question)
         
         return diagnostic_questions
 
     def get_graph_visualization(self, mastery: Dict[str, float]) -> Dict:
         """
-        Generate nodes and edges for streamlit-agraph visualization.
+        Generate nodes and edges for visualization.
         
         Colors nodes based on mastery level:
         - RED (#ff6b6b): mastery < 0.4 (weak)
         - YELLOW (#feca57): 0.4 <= mastery < 0.7 (learning)
         - GREEN (#5cd85c): mastery >= 0.7 (strong)
-        
-        Args:
-            mastery: Dict of concept_id -> mastery score (0.0 to 1.0)
-            
-        Returns:
-            Dict with "nodes" and "edges" lists for streamlit-agraph
-            
-        Example:
-            >>> kg.get_graph_visualization({"limits": 0.8, "continuity": 0.3, ...})
-            {
-                "nodes": [
-                    {"id": "limits", "label": "Limits", "color": "#5cd85c"},
-                    {"id": "continuity", "label": "Continuity", "color": "#ff6b6b"},
-                    ...
-                ],
-                "edges": [
-                    {"source": "limits", "target": "continuity"},
-                    ...
-                ]
-            }
         """
         nodes = []
         edges = []
         
-        # Create nodes with colors based on mastery
         for concept_id, concept in self.concepts.items():
-            # Get mastery score, default to 0.5 if not yet assessed
             score = mastery.get(concept_id, 0.5)
             
-            # Determine color based on mastery level
             if score < 0.4:
-                color = "#ff6b6b"  # Red - weak
+                color = "#ff6b6b"  # Red
             elif score < 0.7:
-                color = "#feca57"  # Yellow - learning
+                color = "#feca57"  # Yellow
             else:
-                color = "#5cd85c"  # Green - strong
+                color = "#5cd85c"  # Green
             
             nodes.append({
                 "id": concept_id,
                 "label": concept["name"],
                 "color": color,
-                "size": 30,  # Node size for visibility
+                "size": 30,
             })
         
-        # Create edges from the graph
         for source, target in self.graph.edges():
             edges.append({
                 "source": source,
@@ -259,3 +227,7 @@ class KnowledgeGraph:
             })
         
         return {"nodes": nodes, "edges": edges}
+
+    def get_concept_order(self) -> List[str]:
+        """Get concepts in topological order (prerequisites first)."""
+        return list(nx.topological_sort(self.graph))

@@ -41,3 +41,63 @@ body {
   border-color: #3f3f46 !important;
   color: white !important;
 }
+
+/* Prose styles for ReactMarkdown */
+.prose {
+  line-height: 1.6;
+  font-size: 0.875rem;
+}
+
+.prose p {
+  margin-bottom: 0.75em;
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.prose strong {
+  font-weight: 700;
+  color: #22d3ee;
+}
+
+.prose ul, .prose ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.prose li {
+  margin: 0.25em 0;
+}
+
+.prose code {
+  background: #27272a;
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.prose pre {
+  background: #18181b;
+  padding: 1em;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0.75em 0;
+}
+
+.prose pre code {
+  background: none;
+  padding: 0;
+}
+
+.prose hr {
+  border-color: #3f3f46;
+  margin: 1em 0;
+}
+
+.prose blockquote {
+  border-left: 3px solid #22d3ee;
+  padding-left: 1em;
+  margin: 0.75em 0;
+  color: #a1a1aa;
+}
