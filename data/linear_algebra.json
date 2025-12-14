@@ -6,8 +6,9 @@
       "name": "Vectors",
       "prerequisites": [],
       "difficulty": 0.2,
+      "lesson": "📚 **What is a Vector?**\n\nThink of a vector as an arrow with:\n• **Direction** - where it points\n• **Magnitude** - how long it is (length)\n\n**Example:** Walking 3 steps East and 4 steps North = vector [3, 4]\n\n**Key Formula:** Length = √(x² + y²)\nSo [3,4] → √(9+16) = √25 = **5**\n\n**Unit Vector:** A vector with length exactly 1\nExample: [0.6, 0.8] → √(0.36 + 0.64) = 1 ✓\n\n**Dot Product:** If two vectors are perpendicular, their dot product = 0",
       "explanation": "Vectors are objects with magnitude and direction. In AI, they are how we represent data (features).",
-      "teaching_prompt": "Think of a vector as an arrow in space. It tells you 'how far' (magnitude) and 'which way' (direction). If you walk 3 steps East and 4 steps North, your final position is a vector. How do we calculate its length?",
+      "teaching_prompt": "Think of a vector as an arrow in space. It tells you 'how far' (magnitude) and 'which way' (direction).",
       "questions": [
         {
           "id": "vec_1",
@@ -61,8 +62,9 @@
       "name": "Matrix Operations",
       "prerequisites": ["vectors"],
       "difficulty": 0.3,
+      "lesson": "📚 **Matrix Operations**\n\nA matrix is a grid of numbers. Think of it as a transformation machine.\n\n**Addition:** Only works if SAME dimensions\n[[1,2]] + [[3,4]] = [[4,6]]\n\n**Multiplication Rules:**\n• Columns of A must equal Rows of B\n• (2×3) × (3×2) = ✓ works → gives (2×2)\n• (2×3) × (2×2) = ✗ fails (3 ≠ 2)\n\n**Identity Matrix (I):** Like multiplying by 1\nA × I = A (nothing changes)\n\n**Transpose:** Flip rows and columns\n[[1,2],[3,4]]ᵀ = [[1,3],[2,4]]",
       "explanation": "Matrices are grids of numbers. Multiplication transforms space (rotates, scales, shears).",
-      "teaching_prompt": "A matrix is just a collection of vectors. When we multiply a matrix by a vector, we are moving that vector to a new place. If the Identity matrix leaves a vector alone, what does a Zero matrix do?",
+      "teaching_prompt": "A matrix is just a collection of vectors. When we multiply a matrix by a vector, we are moving that vector to a new place.",
       "questions": [
         {
           "id": "mat_1",
@@ -116,8 +118,9 @@
       "name": "Determinants",
       "prerequisites": ["matrix_ops"],
       "difficulty": 0.5,
+      "lesson": "📚 **What is a Determinant?**\n\nThe determinant tells you how much a matrix **SCALES area**.\n\n**Intuition:** Start with a 1×1 unit square (area = 1)\n• Matrix stretches it to 2×2 → determinant = **4**\n• Matrix squashes it to a line → determinant = **0**\n\n**2×2 Formula:** For [[a,b],[c,d]]\ndet = **ad - bc**\n\n**Example:** [[2,0],[0,2]]\ndet = (2×2) - (0×0) = **4**\n\n**Key Rules:**\n• det(A×B) = det(A) × det(B)\n• If det = 0 → matrix is \"singular\" (no inverse)",
       "explanation": "The determinant tells us how much a matrix scales area. If it's 0, the matrix squishes space into a line or point.",
-      "teaching_prompt": "Imagine a unit square with area 1. After the matrix transforms it, what is the new area? That number is the determinant. If the area becomes 0, what does that mean about the transformation? Can you reverse it?",
+      "teaching_prompt": "Imagine a unit square with area 1. After the matrix transforms it, what is the new area? That number is the determinant.",
       "questions": [
         {
           "id": "det_1",
@@ -171,8 +174,9 @@
       "name": "Inverse Matrices",
       "prerequisites": ["determinants"],
       "difficulty": 0.6,
+      "lesson": "📚 **What is an Inverse Matrix?**\n\nThe inverse **UNDOES** what a matrix does.\n\nIf A stretches by 2 → A⁻¹ shrinks by ½\n\n**Key Property:** A × A⁻¹ = **I** (Identity Matrix)\n\n**When does an inverse exist?**\n✓ Determinant ≠ 0\n✗ Determinant = 0 (no inverse!)\n\n**Why?** If det=0, the matrix \"squashes\" 3D into 2D.\nYou can't unsquash a pancake back into a cube!\n\n**Example:**\n[[2,0],[0,2]]⁻¹ = [[0.5,0],[0,0.5]]\n(Stretch by 2 → Shrink by ½)\n\n**Reversal Rule:** (AB)⁻¹ = B⁻¹A⁻¹\n(Like taking off shoes then socks)",
       "explanation": "The inverse undoes a transformation. A^-1 * A = I. It only exists if the determinant is not zero.",
-      "teaching_prompt": "If a matrix A multiplies a vector by 2, the inverse A^-1 divides it by 2. It brings you back home. Why can't we find an inverse if the determinant is 0? (Hint: You can't undo a squashed pancake back into a cube).",
+      "teaching_prompt": "If a matrix A multiplies a vector by 2, the inverse A^-1 divides it by 2. It brings you back home.",
       "questions": [
         {
           "id": "inv_1",
@@ -226,8 +230,9 @@
       "name": "Eigenvalues",
       "prerequisites": ["inverse_matrix"],
       "difficulty": 0.8,
+      "lesson": "📚 **What are Eigenvalues?**\n\nWhen a matrix transforms vectors, most vectors change direction.\n\nBut some special vectors **only get stretched** (not rotated).\nThese are **Eigenvectors**. The stretch factor is the **Eigenvalue (λ)**.\n\n**The Magic Formula:** A·v = λ·v\n(Matrix × vector = scalar × same vector)\n\n**Intuition:** Spin a globe. Most points move around.\nBut North & South poles stay on the same axis → they're eigenvectors!\n\n**Key Properties:**\n• Sum of eigenvalues = **Trace** (sum of diagonal)\n• Product of eigenvalues = **Determinant**\n\n**Critical:** If any eigenvalue = 0 → det = 0 → NOT invertible",
       "explanation": "Eigenvectors are vectors that don't change direction during transformation. Eigenvalues are how much they stretch. Key for PCA and PageRank.",
-      "teaching_prompt": "Spin a globe. Most points move around. But the North and South poles stay on the same axis. They are the 'Eigenvectors' of the rotation. Why are these 'special directions' so important for simplifying complex data?",
+      "teaching_prompt": "Spin a globe. Most points move around. But the North and South poles stay on the same axis. They are the 'Eigenvectors' of the rotation.",
       "questions": [
         {
           "id": "eig_1",

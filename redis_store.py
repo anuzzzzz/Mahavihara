@@ -312,12 +312,29 @@ class RedisStore:
     def increment_questions_asked(self, session_id: str) -> int:
         """
         Increment and return the questions asked counter.
-        
+
         Args:
             session_id: Session to update
-            
+
         Returns:
             New count of questions asked
         """
         state_key = self._state_key(session_id)
         return self.client.hincrby(state_key, "questions_asked", 1)
+
+    # ==================== Teaching Turns Management ====================
+
+    def get_teaching_turns(self, session_id: str) -> int:
+        """Get number of teaching turns."""
+        state_key = self._state_key(session_id)
+        return int(self.client.hget(state_key, "teaching_turns") or 0)
+
+    def increment_teaching_turns(self, session_id: str) -> int:
+        """Increment and return teaching turns counter."""
+        state_key = self._state_key(session_id)
+        return self.client.hincrby(state_key, "teaching_turns", 1)
+
+    def reset_teaching_turns(self, session_id: str):
+        """Reset teaching turns to 0."""
+        state_key = self._state_key(session_id)
+        self.client.hset(state_key, "teaching_turns", 0)

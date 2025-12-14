@@ -170,46 +170,65 @@ This is the foundational concept we need to strengthen. Let me help you understa
 
 def teach_node(state: AgentState) -> AgentState:
     """
-    Teach the root cause concept using Socratic method.
-    
-    Uses GPT to have a dialogue that guides the student
-    to understand the concept through questions.
+    Teach the root cause concept.
+
+    FLOW:
+    - Turn 0: Show the structured mini-lesson from JSON
+    - Turn 1+: Interactive GPT dialogue
     """
+    session_id = state["session_id"]
     root_cause = state["root_cause"]
     concept_data = kg.get_concept(root_cause)
-    
-    # Build system prompt for Socratic teaching
-    system_prompt = f"""You are a Socratic tutor teaching the concept of "{concept_data['name']}" in calculus.
 
-Concept explanation: {concept_data['explanation']}
+    # Get teaching turns from Redis (persisted!)
+    teaching_turns = store.get_teaching_turns(session_id)
 
-Teaching approach: {concept_data['teaching_prompt']}
+    # TURN 0: Show the pre-written lesson FIRST
+    if teaching_turns == 0:
+        lesson = concept_data.get("lesson", concept_data.get("explanation", ""))
+        if lesson:
+            lesson_with_prompt = lesson + "\n\n---\n💬 *Does this make sense? Ask me anything or say 'yes' to continue.*"
+            state["messages"].append(AIMessage(content=lesson_with_prompt))
+            store.increment_teaching_turns(session_id)
+            return state
+
+    # TURN 1+: Interactive GPT dialogue
+    system_prompt = f"""You are a warm, encouraging tutor helping a student understand "{concept_data['name']}".
+
+The student has already read this lesson:
+---
+{concept_data.get('lesson', concept_data['explanation'])}
+---
+
+HOW TO RESPOND:
+- If they say "yes" / "got it" / "makes sense" → Say "Great!" and move on
+- If they say "no" / "confused" → Re-explain simpler with a NEW analogy
+- If they ask a question (like "what is X?") → Answer it DIRECTLY and simply
+- If they attempt an answer → Give feedback, correct gently if needed
 
 RULES:
-1. NEVER give direct answers - always ask guiding questions
-2. Use simple analogies and real-world examples
-3. Break complex ideas into small steps
-4. Encourage the student when they make progress
-5. If they're stuck, give a small hint as a question
-6. Keep responses concise (2-3 sentences max)
-7. Use LaTeX for math: $x^2$ for inline, $$\\int f(x)dx$$ for blocks"""
+- Be SHORT (2-3 sentences max)
+- Be warm ("Great question!", "Good thinking!")
+- Answer questions DIRECTLY - don't deflect with more questions
+- Use everyday analogies (spreadsheets, grids, tables)
 
-    # Build messages for GPT
+BAD: "What do you think a matrix is?" (when they asked YOU)
+GOOD: "A matrix is just a table of numbers, like a spreadsheet! Each cell has a value."
+"""
+
     gpt_messages = [SystemMessage(content=system_prompt)]
-    
-    # Add conversation history (last few exchanges)
+
+    # Add recent conversation history
     for msg in state["messages"][-6:]:
         if isinstance(msg, HumanMessage):
             gpt_messages.append(msg)
         elif isinstance(msg, AIMessage):
             gpt_messages.append(msg)
-    
-    # Get response from GPT
+
     response = llm.invoke(gpt_messages)
-    
     state["messages"].append(AIMessage(content=response.content))
-    state["teaching_turns"] += 1
-    
+    store.increment_teaching_turns(session_id)
+
     return state
 
 
@@ -486,14 +505,17 @@ class TutorAgent:
             # Process teaching dialogue
             state = teach_node(state)
             response_messages.append(state["messages"][-1])
-            
-            # After 2 turns, move to verify
-            # For simplicity, we'll check via a flag or count
-            # In production, track this in Redis
-            store.set_phase(session_id, "verifying")
-            state = verify_node(state)
-            response_messages.append(state["messages"][-1])
-            state["phase"] = "verifying"
+
+            # Check if we should move to verification (after 3+ teaching exchanges)
+            teaching_turns = store.get_teaching_turns(session_id)
+
+            if teaching_turns >= 3:
+                # Move to verify
+                store.set_phase(session_id, "verifying")
+                state = verify_node(state)
+                response_messages.append(state["messages"][-1])
+                state["phase"] = "verifying"
+            # else: stay in teaching phase, wait for more dialogue
         
         elif phase == "verifying":
             # Get the verification question
