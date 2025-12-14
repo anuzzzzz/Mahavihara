@@ -6,3 +6,5 @@ langchain-openai==0.2.10
 networkx==3.4.2
 redis==5.2.0
 python-dotenv==1.0.1
+fastapi==0.115.0
+uvicorn==0.32.0
