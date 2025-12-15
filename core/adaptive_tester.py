@@ -270,6 +270,36 @@ class AdaptiveTester:
             "responses": self.responses
         }
 
+    # ==================== Dynamic Question Generators ====================
+
+    def generate_magnitude_question(self) -> dict:
+        """Generate unique magnitude question with random Pythagorean triple."""
+        triples = [(3, 4, 5), (5, 12, 13), (8, 15, 17), (7, 24, 25), (9, 40, 41), (6, 8, 10)]
+        a, b, answer = random.choice(triples)
+
+        # Generate distractors (common mistakes)
+        distractors = [a + b, a * b, abs(a - b)]
+        options = [answer] + distractors
+        random.shuffle(options)
+
+        return {
+            "id": f"vec_mag_gen_{random.randint(1000, 9999)}",
+            "text": f"What is the magnitude of vector v = [{a}, {b}]?",
+            "options": [str(o) for o in options],
+            "correct": options.index(answer),
+            "difficulty": 1,
+            "explanation": f"√({a}² + {b}²) = √{a*a + b*b} = {answer}"
+        }
+
+    def generate_dynamic_question(self, concept_id: str, difficulty: int = 1) -> Optional[dict]:
+        """Generate a dynamic question for a concept when static pool is exhausted."""
+        if concept_id == "vectors":
+            question = self.generate_magnitude_question()
+            question["difficulty"] = difficulty
+            return question
+        # Add more generators for other concepts as needed
+        return None
+
     # ==================== State Management ====================
 
     def reset(self):

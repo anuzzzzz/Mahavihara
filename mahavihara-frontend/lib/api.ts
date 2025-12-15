@@ -1,5 +1,5 @@
 // lib/api.ts
-// Updated to handle new response format with inline prescription and gap analysis
+// Updated with new response fields for proper button logic
 
 const API_URL = "http://localhost:8000";
 
@@ -20,40 +20,6 @@ export interface GraphEdge {
   target: string;
 }
 
-// ==================== Gap Analysis Types ====================
-
-export interface Misconception {
-  id: string;
-  name: string;
-  description: string;
-  severity: string;
-  explanation?: string;
-  remediation_focus?: string;
-}
-
-export interface WrongAnswer {
-  question_id: string;
-  user_answer: string;
-  correct_answer: string;
-  misconception?: Misconception;
-}
-
-export interface GapAnalysis {
-  total_questions: number;
-  correct_count: number;
-  wrong_answers: WrongAnswer[];
-  primary_weakness?: string;
-  misconceptions: Misconception[];
-  most_critical?: {
-    name: string;
-    description: string;
-    explanation: string;
-    remediation: string;
-  };
-}
-
-// ==================== Prescription Types ====================
-
 export interface PrescriptionPhase {
   phase: number;
   action: string;
@@ -72,7 +38,6 @@ export interface PrescriptionResource {
   source: string;
   why: string;
   timestamp?: string;
-  duration?: string;
 }
 
 export interface Diagnosis {
@@ -104,28 +69,29 @@ export interface PrescriptionData {
   formatted?: string;
 }
 
-// ==================== Session Response Types ====================
-
 export interface SessionResponse {
   session_id: string;
   messages: Message[];
   phase: string;
   mastery: Record<string, number>;
   current_concept?: string;
+  quiz_passed?: boolean | null;
+  can_advance?: boolean;
 }
 
-// NEW: Enhanced chat response with inline prescription
+// NEW: Enhanced chat response with explicit state flags
 export interface ChatResponse {
   messages: Message[];
   phase: string;
   mastery: Record<string, number>;
   current_concept?: string;
-  root_cause?: string;
-  // NEW FIELDS - prescription data inline!
-  gap_analysis?: GapAnalysis | null;
-  prescription?: PrescriptionData | null;
-  resources?: PrescriptionResource[] | null;
+  // NEW: Explicit state flags
+  quiz_passed: boolean | null;  // true = passed, false = failed, null = not in evaluate
+  can_advance: boolean;         // true = user can click Continue
+  next_concept: string | null;  // name of next concept
+  // Prescription
   show_prescription_card: boolean;
+  prescription: PrescriptionData | null;
 }
 
 export interface GraphStateResponse {
@@ -151,15 +117,6 @@ export interface VerifyResponse {
   next_action: string;
   new_mastery: number;
 }
-
-export interface ResourcesResponse {
-  concept_id: string;
-  resources: PrescriptionResource[];
-  formatted: string;
-  tavily_enabled: boolean;
-}
-
-// ==================== API Functions ====================
 
 export async function startSession(sessionId?: string): Promise<SessionResponse> {
   const res = await fetch(`${API_URL}/start-session`, {
@@ -212,24 +169,8 @@ export async function verifyMastery(request: VerifyRequest): Promise<VerifyRespo
   return res.json();
 }
 
-export async function getResources(conceptId: string, limit: number = 5): Promise<ResourcesResponse> {
+export async function getResources(conceptId: string, limit: number = 5) {
   const res = await fetch(`${API_URL}/resources/${conceptId}?limit=${limit}`);
   if (!res.ok) throw new Error("Failed to get resources");
-  return res.json();
-}
-
-// Health check - also shows if Tavily is enabled
-export async function checkHealth(): Promise<{
-  status: string;
-  version: string;
-  features: {
-    misconception_detection: boolean;
-    prescription_engine: boolean;
-    tavily_search: boolean;
-    socratic_tutor: boolean;
-  };
-}> {
-  const res = await fetch(`${API_URL}/`);
-  if (!res.ok) throw new Error("API not available");
   return res.json();
 }
