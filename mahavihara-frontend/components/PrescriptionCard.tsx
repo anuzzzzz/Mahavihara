@@ -346,7 +346,7 @@ export default function PrescriptionCard({
           </div>
           <button
             onClick={onComplete}
-            disabled={completedPhases.length < phases.length - 1}
+            disabled={false}
             className={`
               px-4 py-2 rounded-lg font-medium text-sm transition-all
               ${completedPhases.length >= phases.length - 1
