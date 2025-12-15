@@ -23,6 +23,7 @@ export interface SessionResponse {
   messages: Message[];
   phase: string;
   mastery: Record<string, number>;
+  current_concept?: string;
 }
 
 export interface ChatResponse {
@@ -30,11 +31,81 @@ export interface ChatResponse {
   phase: string;
   mastery: Record<string, number>;
   root_cause?: string;
+  current_concept?: string;
+  quiz_passed?: boolean;
 }
 
 export interface GraphStateResponse {
   nodes: GraphNode[];
   edges: GraphEdge[];
+}
+
+export interface PrescriptionPhase {
+  phase: number;
+  action: string;
+  title: string;
+  url: string | null;
+  source: string;
+  duration: string;
+  instruction?: string;
+  icon: string;
+}
+
+export interface PrescriptionResource {
+  type: string;
+  title: string;
+  url: string;
+  source: string;
+  why: string;
+  timestamp?: string;
+}
+
+export interface Diagnosis {
+  title?: string;
+  failed_concept: string;
+  root_cause: string;
+  misconception: string | null;
+  explanation: string | null;
+  confidence: number;
+}
+
+export interface PrescriptionData {
+  diagnosis: Diagnosis;
+  prescription: {
+    title: string;
+    phases: PrescriptionPhase[];
+    total_time: string;
+  };
+  resources: {
+    title: string;
+    items: PrescriptionResource[];
+  };
+  verification: {
+    title: string;
+    criteria: string;
+    question_ids: string[];
+    success_criteria: string;
+  };
+  formatted?: string;
+}
+
+export interface VerifyRequest {
+  session_id: string;
+  concept_id: string;
+  quiz_results: Array<{
+    question_id: string;
+    user_answer: string;
+    correct_answer: string;
+    is_correct: boolean;
+  }>;
+}
+
+export interface VerifyResponse {
+  passed: boolean;
+  score: string;
+  misconception_fixed: boolean;
+  next_action: string;
+  new_mastery: number;
 }
 
 export async function startSession(sessionId?: string): Promise<SessionResponse> {
@@ -67,4 +138,29 @@ export async function deleteSession(sessionId: string): Promise<void> {
   await fetch(`${API_URL}/session/${sessionId}`, {
     method: "DELETE",
   });
+}
+
+export async function getPrescription(
+  sessionId: string,
+  conceptId: string
+): Promise<PrescriptionData> {
+  const res = await fetch(`${API_URL}/prescription/${sessionId}/${conceptId}`);
+  if (!res.ok) throw new Error("Failed to get prescription");
+  return res.json();
+}
+
+export async function verifyMastery(request: VerifyRequest): Promise<VerifyResponse> {
+  const res = await fetch(`${API_URL}/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  if (!res.ok) throw new Error("Failed to verify mastery");
+  return res.json();
+}
+
+export async function getResources(conceptId: string, limit: number = 5) {
+  const res = await fetch(`${API_URL}/resources/${conceptId}?limit=${limit}`);
+  if (!res.ok) throw new Error("Failed to get resources");
+  return res.json();
 }

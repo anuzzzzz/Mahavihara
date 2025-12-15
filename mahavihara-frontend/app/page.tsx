@@ -6,14 +6,17 @@ import dynamic from "next/dynamic";
 import Confetti from "react-confetti";
 import ChatInterface from "@/components/ChatInterface";
 import Sidebar from "@/components/Sidebar";
+import PrescriptionCard from "@/components/PrescriptionCard";
 import {
   startSession,
   sendMessage,
   getGraphState,
   deleteSession,
+  getPrescription,
   Message,
   GraphNode,
   GraphEdge,
+  PrescriptionData,
 } from "@/lib/api";
 
 const KnowledgeGraph = dynamic(() => import("@/components/KnowledgeGraph"), {
@@ -25,17 +28,36 @@ const KnowledgeGraph = dynamic(() => import("@/components/KnowledgeGraph"), {
   ),
 });
 
+// Concept order for tracking
+const CONCEPT_ORDER = ["vectors", "matrix_ops", "determinants", "inverse_matrix", "eigenvalues"];
+
 export default function Home() {
+  // Session state
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [phase, setPhase] = useState<string>("diagnostic");
+  const [phase, setPhase] = useState<string>("lesson");
   const [mastery, setMastery] = useState<Record<string, number>>({});
+  const [currentConceptIndex, setCurrentConceptIndex] = useState(0);
+  
+  // Graph state
   const [graphNodes, setGraphNodes] = useState<GraphNode[]>([]);
   const [graphEdges, setGraphEdges] = useState<GraphEdge[]>([]);
+  
+  // UI state
   const [isLoading, setIsLoading] = useState(false);
   const [rootCause, setRootCause] = useState<string | undefined>();
   const [showConfetti, setShowConfetti] = useState(false);
+  
+  // Prescription state - THE NEW STUFF
+  const [prescription, setPrescription] = useState<PrescriptionData | null>(null);
+  const [showPrescription, setShowPrescription] = useState(false);
+  const [currentPrescriptionPhase, setCurrentPrescriptionPhase] = useState(1);
+  const [completedPrescriptionPhases, setCompletedPrescriptionPhases] = useState<number[]>([]);
 
+  // Get current concept ID
+  const currentConcept = CONCEPT_ORDER[currentConceptIndex] || "vectors";
+
+  // Initialize session
   const initSession = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -59,6 +81,7 @@ export default function Home() {
     initSession();
   }, [initSession]);
 
+  // Poll graph state
   useEffect(() => {
     if (!sessionId) return;
 
@@ -75,8 +98,44 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [sessionId]);
 
+  // Detect quiz failure and fetch prescription
+  const checkForQuizFailure = useCallback(async (
+    responsePhase: string,
+    responseMastery: Record<string, number>,
+    responseMessages: Message[]
+  ) => {
+    // Check if we just failed a quiz (phase is "evaluate" and mastery < 0.6)
+    const lastMessage = responseMessages[responseMessages.length - 1]?.content || "";
+    const isQuizFailure = 
+      responsePhase === "evaluate" && 
+      (lastMessage.includes("Not quite yet") || 
+       lastMessage.includes("You got 1/3") ||
+       lastMessage.includes("You got 0/3") ||
+       lastMessage.includes("need 2/3"));
+
+    if (isQuizFailure && sessionId) {
+      try {
+        console.log("Quiz failed! Fetching prescription for:", currentConcept);
+        const prescriptionData = await getPrescription(sessionId, currentConcept);
+        setPrescription(prescriptionData);
+        setShowPrescription(true);
+        setCurrentPrescriptionPhase(1);
+        setCompletedPrescriptionPhases([]);
+      } catch (error) {
+        console.error("Failed to fetch prescription:", error);
+        // Don't show prescription card if fetch fails
+      }
+    }
+  }, [sessionId, currentConcept]);
+
+  // Handle sending messages
   const handleSendMessage = async (message: string) => {
     if (!sessionId) return;
+
+    // Hide prescription when user sends a message (they're continuing)
+    if (showPrescription && message.toLowerCase().includes("quiz")) {
+      setShowPrescription(false);
+    }
 
     setMessages((prev) => [...prev, { role: "user", content: message }]);
     setIsLoading(true);
@@ -87,21 +146,36 @@ export default function Home() {
       setMessages((prev) => [...prev, ...response.messages]);
       setPhase(response.phase);
 
-      // Check if any concept just crossed 0.6 threshold
+      // Check if any concept just crossed 0.6 threshold (mastered!)
       const prevMastery = mastery;
       const newMastery = response.mastery;
       Object.keys(newMastery).forEach((concept) => {
         if ((prevMastery[concept] || 0) < 0.6 && newMastery[concept] >= 0.6) {
           setShowConfetti(true);
+          setShowPrescription(false); // Hide prescription on success
+          setPrescription(null);
           setTimeout(() => setShowConfetti(false), 5000);
         }
       });
 
       setMastery(response.mastery);
+      
       if (response.root_cause) {
         setRootCause(response.root_cause);
       }
 
+      // Update current concept if provided
+      if (response.current_concept) {
+        const newIndex = CONCEPT_ORDER.indexOf(response.current_concept);
+        if (newIndex !== -1) {
+          setCurrentConceptIndex(newIndex);
+        }
+      }
+
+      // Check for quiz failure and show prescription
+      await checkForQuizFailure(response.phase, response.mastery, response.messages);
+
+      // Update graph
       const graphState = await getGraphState(sessionId);
       setGraphNodes(graphState.nodes);
       setGraphEdges(graphState.edges);
@@ -116,20 +190,56 @@ export default function Home() {
     }
   };
 
+  // Handle prescription phase progression
+  const handleStartPrescriptionPhase = (phase: number) => {
+    setCurrentPrescriptionPhase(phase);
+    
+    // If clicking on a phase with a URL, it will open externally
+    // Mark previous phases as completed
+    const newCompleted = Array.from(
+      { length: phase - 1 }, 
+      (_, i) => i + 1
+    ).filter(p => !completedPrescriptionPhases.includes(p));
+    
+    setCompletedPrescriptionPhases([...completedPrescriptionPhases, ...newCompleted]);
+  };
+
+  // Handle prescription completion (verification)
+  const handlePrescriptionComplete = () => {
+    // Mark all phases as completed
+    if (prescription) {
+      const allPhases = prescription.prescription.phases.map(p => p.phase);
+      setCompletedPrescriptionPhases(allPhases);
+    }
+    
+    // Send "quiz me" to trigger verification quiz
+    handleSendMessage("quiz me");
+    setShowPrescription(false);
+  };
+
+  // Close prescription card
+  const handleClosePrescription = () => {
+    setShowPrescription(false);
+  };
+
+  // Reset session
   const handleReset = async () => {
-    // Delete old session from Redis first
     if (sessionId) {
       await deleteSession(sessionId);
     }
 
-    // Clear local state
+    // Clear all state
     setSessionId(null);
     setMessages([]);
-    setPhase("diagnostic");
+    setPhase("lesson");
     setMastery({});
     setGraphNodes([]);
     setGraphEdges([]);
     setRootCause(undefined);
+    setPrescription(null);
+    setShowPrescription(false);
+    setCurrentConceptIndex(0);
+    setCompletedPrescriptionPhases([]);
 
     // Start fresh
     initSession();
@@ -143,7 +253,7 @@ export default function Home() {
       <Sidebar />
 
       {/* Chat Panel (35%) */}
-      <div className="w-[35%] h-full p-4">
+      <div className="w-[35%] h-full p-4 relative">
         <ChatInterface
           messages={messages}
           onSendMessage={handleSendMessage}
@@ -153,6 +263,40 @@ export default function Home() {
           mastery={mastery}
           rootCause={rootCause}
         />
+        
+        {/* Prescription Card Overlay */}
+        {showPrescription && prescription && (
+          <div className="absolute inset-0 z-50 p-4 bg-black/80 backdrop-blur-sm overflow-auto">
+            <div className="relative">
+              {/* Close button */}
+              <button
+                onClick={handleClosePrescription}
+                className="absolute -top-2 -right-2 z-10 w-8 h-8 bg-zinc-800 hover:bg-zinc-700 
+                           rounded-full flex items-center justify-center text-zinc-400 hover:text-white
+                           transition-colors border border-zinc-700"
+              >
+                ✕
+              </button>
+              
+              <PrescriptionCard
+                prescription={{
+                  diagnosis: prescription.diagnosis,
+                  phases: prescription.prescription.phases,
+                  resources: prescription.resources.items,
+                  verification: {
+                    question_ids: prescription.verification.question_ids,
+                    success_criteria: prescription.verification.success_criteria,
+                  },
+                  estimated_time: prescription.prescription.total_time,
+                }}
+                onStartPhase={handleStartPrescriptionPhase}
+                onComplete={handlePrescriptionComplete}
+                currentPhase={currentPrescriptionPhase}
+                completedPhases={completedPrescriptionPhases}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Knowledge Graph Panel (remaining) */}
@@ -162,19 +306,33 @@ export default function Home() {
             <h2 className="text-sm font-mono text-cyan-400 drop-shadow-[0_0_10px_rgba(0,255,255,0.5)]">
               KNOWLEDGE GRAPH
             </h2>
-            <div className="flex items-center gap-2 text-[10px]">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.8)]"></span>
-                Mastered
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]"></span>
-                Weak
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-zinc-500"></span>
-                Neutral
-              </span>
+            <div className="flex items-center gap-4">
+              {/* Show prescription indicator when available */}
+              {prescription && !showPrescription && (
+                <button
+                  onClick={() => setShowPrescription(true)}
+                  className="text-xs bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full
+                             border border-amber-500/30 hover:bg-amber-500/30 transition-colors
+                             animate-pulse"
+                >
+                  📋 View Prescription
+                </button>
+              )}
+              
+              <div className="flex items-center gap-2 text-[10px]">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.8)]"></span>
+                  Mastered
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]"></span>
+                  Weak
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-zinc-500"></span>
+                  Neutral
+                </span>
+              </div>
             </div>
           </div>
           <div className="h-[calc(100%-48px)]">
