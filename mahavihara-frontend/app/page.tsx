@@ -1,4 +1,5 @@
 // app/page.tsx
+// Updated to use inline prescription from chat response
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -12,11 +13,12 @@ import {
   sendMessage,
   getGraphState,
   deleteSession,
-  getPrescription,
   Message,
   GraphNode,
   GraphEdge,
   PrescriptionData,
+  GapAnalysis,
+  PrescriptionResource,
 } from "@/lib/api";
 
 const KnowledgeGraph = dynamic(() => import("@/components/KnowledgeGraph"), {
@@ -48,11 +50,15 @@ export default function Home() {
   const [rootCause, setRootCause] = useState<string | undefined>();
   const [showConfetti, setShowConfetti] = useState(false);
   
-  // Prescription state - THE NEW STUFF
+  // Prescription state - NOW COMES FROM CHAT RESPONSE!
   const [prescription, setPrescription] = useState<PrescriptionData | null>(null);
   const [showPrescription, setShowPrescription] = useState(false);
   const [currentPrescriptionPhase, setCurrentPrescriptionPhase] = useState(1);
   const [completedPrescriptionPhases, setCompletedPrescriptionPhases] = useState<number[]>([]);
+  
+  // Gap analysis state - NEW!
+  const [gapAnalysis, setGapAnalysis] = useState<GapAnalysis | null>(null);
+  const [resources, setResources] = useState<PrescriptionResource[] | null>(null);
 
   // Get current concept ID
   const currentConcept = CONCEPT_ORDER[currentConceptIndex] || "vectors";
@@ -98,41 +104,11 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [sessionId]);
 
-  // Detect quiz failure and fetch prescription
-  const checkForQuizFailure = useCallback(async (
-    responsePhase: string,
-    responseMastery: Record<string, number>,
-    responseMessages: Message[]
-  ) => {
-    // Check if we just failed a quiz (phase is "evaluate" and mastery < 0.6)
-    const lastMessage = responseMessages[responseMessages.length - 1]?.content || "";
-    const isQuizFailure = 
-      responsePhase === "evaluate" && 
-      (lastMessage.includes("Not quite yet") || 
-       lastMessage.includes("You got 1/3") ||
-       lastMessage.includes("You got 0/3") ||
-       lastMessage.includes("need 2/3"));
-
-    if (isQuizFailure && sessionId) {
-      try {
-        console.log("Quiz failed! Fetching prescription for:", currentConcept);
-        const prescriptionData = await getPrescription(sessionId, currentConcept);
-        setPrescription(prescriptionData);
-        setShowPrescription(true);
-        setCurrentPrescriptionPhase(1);
-        setCompletedPrescriptionPhases([]);
-      } catch (error) {
-        console.error("Failed to fetch prescription:", error);
-        // Don't show prescription card if fetch fails
-      }
-    }
-  }, [sessionId, currentConcept]);
-
   // Handle sending messages
   const handleSendMessage = async (message: string) => {
     if (!sessionId) return;
 
-    // Hide prescription when user sends a message (they're continuing)
+    // Hide prescription when user starts new quiz
     if (showPrescription && message.toLowerCase().includes("quiz")) {
       setShowPrescription(false);
     }
@@ -154,6 +130,7 @@ export default function Home() {
           setShowConfetti(true);
           setShowPrescription(false); // Hide prescription on success
           setPrescription(null);
+          setGapAnalysis(null);
           setTimeout(() => setShowConfetti(false), 5000);
         }
       });
@@ -172,8 +149,26 @@ export default function Home() {
         }
       }
 
-      // Check for quiz failure and show prescription
-      await checkForQuizFailure(response.phase, response.mastery, response.messages);
+      // ==================== NEW: Handle inline prescription data ====================
+      
+      // Update gap analysis if provided
+      if (response.gap_analysis) {
+        setGapAnalysis(response.gap_analysis);
+      }
+      
+      // Update resources if provided
+      if (response.resources) {
+        setResources(response.resources);
+      }
+      
+      // Show prescription card if backend says so!
+      if (response.show_prescription_card && response.prescription) {
+        console.log("📋 Showing prescription card:", response.prescription);
+        setPrescription(response.prescription);
+        setShowPrescription(true);
+        setCurrentPrescriptionPhase(1);
+        setCompletedPrescriptionPhases([]);
+      }
 
       // Update graph
       const graphState = await getGraphState(sessionId);
@@ -194,7 +189,6 @@ export default function Home() {
   const handleStartPrescriptionPhase = (phase: number) => {
     setCurrentPrescriptionPhase(phase);
     
-    // If clicking on a phase with a URL, it will open externally
     // Mark previous phases as completed
     const newCompleted = Array.from(
       { length: phase - 1 }, 
@@ -208,7 +202,7 @@ export default function Home() {
   const handlePrescriptionComplete = () => {
     // Mark all phases as completed
     if (prescription) {
-      const allPhases = prescription.prescription.phases.map(p => p.phase);
+      const allPhases = prescription.prescription.phases.map((_, i) => i + 1);
       setCompletedPrescriptionPhases(allPhases);
     }
     
@@ -240,10 +234,17 @@ export default function Home() {
     setShowPrescription(false);
     setCurrentConceptIndex(0);
     setCompletedPrescriptionPhases([]);
+    setGapAnalysis(null);
+    setResources(null);
 
     // Start fresh
     initSession();
   };
+
+  // Calculate overall mastery
+  const overallMastery = Object.values(mastery).length > 0
+    ? Math.round((Object.values(mastery).reduce((a, b) => a + b, 0) / Object.values(mastery).length) * 100)
+    : 50;
 
   return (
     <main className="h-screen w-screen bg-[#0A0A0A] text-white flex overflow-hidden">
@@ -264,7 +265,7 @@ export default function Home() {
           rootCause={rootCause}
         />
         
-        {/* Prescription Card Overlay */}
+        {/* Prescription Card Overlay - Shows on quiz failure */}
         {showPrescription && prescription && (
           <div className="absolute inset-0 z-50 p-4 bg-black/80 backdrop-blur-sm overflow-auto">
             <div className="relative">
@@ -281,13 +282,13 @@ export default function Home() {
               <PrescriptionCard
                 prescription={{
                   diagnosis: prescription.diagnosis,
-                  phases: prescription.prescription.phases,
-                  resources: prescription.resources.items,
+                  phases: prescription.prescription?.phases || [],
+                  resources: prescription.resources?.items || [],
                   verification: {
-                    question_ids: prescription.verification.question_ids,
-                    success_criteria: prescription.verification.success_criteria,
+                    question_ids: prescription.verification?.question_ids || [],
+                    success_criteria: prescription.verification?.success_criteria || "Pass 2/3 questions",
                   },
-                  estimated_time: prescription.prescription.total_time,
+                  estimated_time: prescription.prescription?.total_time || "10 minutes",
                 }}
                 onStartPhase={handleStartPrescriptionPhase}
                 onComplete={handlePrescriptionComplete}
@@ -307,7 +308,7 @@ export default function Home() {
               KNOWLEDGE GRAPH
             </h2>
             <div className="flex items-center gap-4">
-              {/* Show prescription indicator when available */}
+              {/* Prescription indicator */}
               {prescription && !showPrescription && (
                 <button
                   onClick={() => setShowPrescription(true)}
@@ -319,6 +320,25 @@ export default function Home() {
                 </button>
               )}
               
+              {/* Gap Analysis indicator */}
+              {gapAnalysis && gapAnalysis.wrong_answers.length > 0 && !showPrescription && (
+                <button
+                  onClick={() => prescription && setShowPrescription(true)}
+                  className="text-xs bg-red-500/20 text-red-400 px-3 py-1 rounded-full
+                             border border-red-500/30 hover:bg-red-500/30 transition-colors"
+                >
+                  ⚠️ {gapAnalysis.wrong_answers.length} gaps found
+                </button>
+              )}
+              
+              {/* Overall mastery */}
+              <div className="text-xs font-mono text-zinc-500">
+                Mastery: <span className={overallMastery >= 60 ? "text-green-400" : "text-amber-400"}>
+                  {overallMastery}%
+                </span>
+              </div>
+              
+              {/* Legend */}
               <div className="flex items-center gap-2 text-[10px]">
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.8)]"></span>
@@ -335,6 +355,7 @@ export default function Home() {
               </div>
             </div>
           </div>
+          
           <div className="h-[calc(100%-48px)]">
             <KnowledgeGraph nodes={graphNodes} edges={graphEdges} />
           </div>

@@ -1,4 +1,6 @@
 // lib/api.ts
+// Updated to handle new response format with inline prescription and gap analysis
+
 const API_URL = "http://localhost:8000";
 
 export interface Message {
@@ -18,27 +20,39 @@ export interface GraphEdge {
   target: string;
 }
 
-export interface SessionResponse {
-  session_id: string;
-  messages: Message[];
-  phase: string;
-  mastery: Record<string, number>;
-  current_concept?: string;
+// ==================== Gap Analysis Types ====================
+
+export interface Misconception {
+  id: string;
+  name: string;
+  description: string;
+  severity: string;
+  explanation?: string;
+  remediation_focus?: string;
 }
 
-export interface ChatResponse {
-  messages: Message[];
-  phase: string;
-  mastery: Record<string, number>;
-  root_cause?: string;
-  current_concept?: string;
-  quiz_passed?: boolean;
+export interface WrongAnswer {
+  question_id: string;
+  user_answer: string;
+  correct_answer: string;
+  misconception?: Misconception;
 }
 
-export interface GraphStateResponse {
-  nodes: GraphNode[];
-  edges: GraphEdge[];
+export interface GapAnalysis {
+  total_questions: number;
+  correct_count: number;
+  wrong_answers: WrongAnswer[];
+  primary_weakness?: string;
+  misconceptions: Misconception[];
+  most_critical?: {
+    name: string;
+    description: string;
+    explanation: string;
+    remediation: string;
+  };
 }
+
+// ==================== Prescription Types ====================
 
 export interface PrescriptionPhase {
   phase: number;
@@ -58,6 +72,7 @@ export interface PrescriptionResource {
   source: string;
   why: string;
   timestamp?: string;
+  duration?: string;
 }
 
 export interface Diagnosis {
@@ -89,6 +104,35 @@ export interface PrescriptionData {
   formatted?: string;
 }
 
+// ==================== Session Response Types ====================
+
+export interface SessionResponse {
+  session_id: string;
+  messages: Message[];
+  phase: string;
+  mastery: Record<string, number>;
+  current_concept?: string;
+}
+
+// NEW: Enhanced chat response with inline prescription
+export interface ChatResponse {
+  messages: Message[];
+  phase: string;
+  mastery: Record<string, number>;
+  current_concept?: string;
+  root_cause?: string;
+  // NEW FIELDS - prescription data inline!
+  gap_analysis?: GapAnalysis | null;
+  prescription?: PrescriptionData | null;
+  resources?: PrescriptionResource[] | null;
+  show_prescription_card: boolean;
+}
+
+export interface GraphStateResponse {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
 export interface VerifyRequest {
   session_id: string;
   concept_id: string;
@@ -107,6 +151,15 @@ export interface VerifyResponse {
   next_action: string;
   new_mastery: number;
 }
+
+export interface ResourcesResponse {
+  concept_id: string;
+  resources: PrescriptionResource[];
+  formatted: string;
+  tavily_enabled: boolean;
+}
+
+// ==================== API Functions ====================
 
 export async function startSession(sessionId?: string): Promise<SessionResponse> {
   const res = await fetch(`${API_URL}/start-session`, {
@@ -159,8 +212,24 @@ export async function verifyMastery(request: VerifyRequest): Promise<VerifyRespo
   return res.json();
 }
 
-export async function getResources(conceptId: string, limit: number = 5) {
+export async function getResources(conceptId: string, limit: number = 5): Promise<ResourcesResponse> {
   const res = await fetch(`${API_URL}/resources/${conceptId}?limit=${limit}`);
   if (!res.ok) throw new Error("Failed to get resources");
+  return res.json();
+}
+
+// Health check - also shows if Tavily is enabled
+export async function checkHealth(): Promise<{
+  status: string;
+  version: string;
+  features: {
+    misconception_detection: boolean;
+    prescription_engine: boolean;
+    tavily_search: boolean;
+    socratic_tutor: boolean;
+  };
+}> {
+  const res = await fetch(`${API_URL}/`);
+  if (!res.ok) throw new Error("API not available");
   return res.json();
 }
