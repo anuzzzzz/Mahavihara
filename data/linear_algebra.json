@@ -6,55 +6,25 @@
       "name": "Vectors",
       "prerequisites": [],
       "difficulty": 0.2,
-      "lesson": "📚 **What is a Vector?**\n\nThink of a vector as an arrow with:\n• **Direction** - where it points\n• **Magnitude** - how long it is (length)\n\n**Example:** Walking 3 steps East and 4 steps North = vector [3, 4]\n\n**Key Formula:** Length = √(x² + y²)\nSo [3,4] → √(9+16) = √25 = **5**\n\n**Unit Vector:** A vector with length exactly 1\nExample: [0.6, 0.8] → √(0.36 + 0.64) = 1 ✓\n\n**Dot Product:** If two vectors are perpendicular, their dot product = 0",
+      "lesson": "**What is a Vector?**\n\nThink of a vector as an arrow with:\n- **Direction** - where it points\n- **Magnitude** - how long it is (length)\n\n**Example:** Walking 3 steps East and 4 steps North = vector [3, 4]\n\n**Key Formula:** Length = sqrt(x^2 + y^2)\nSo [3,4] -> sqrt(9+16) = sqrt(25) = **5**\n\n**Unit Vector:** A vector with length exactly 1\nExample: [0.6, 0.8] -> sqrt(0.36 + 0.64) = 1\n\n**Dot Product:** If two vectors are perpendicular, their dot product = 0",
       "explanation": "Vectors are objects with magnitude and direction. In AI, they are how we represent data (features).",
       "teaching_prompt": "Think of a vector as an arrow in space. It tells you 'how far' (magnitude) and 'which way' (direction).",
       "questions": [
-        {
-          "id": "vec_1",
-          "text": "What is the magnitude (length) of vector v = [3, 4]?",
-          "options": ["7", "5", "12", "1"],
-          "correct": 1,
-          "difficulty": 1,
-          "hint": "Use the Pythagorean theorem: √(x² + y²).",
-          "explanation": "√(3² + 4²) = √(9 + 16) = √25 = 5."
-        },
-        {
-          "id": "vec_2",
-          "text": "The dot product of two orthogonal (perpendicular) vectors is always:",
-          "options": ["1", "0", "-1", "Infinite"],
-          "correct": 1,
-          "difficulty": 1,
-          "hint": "Dot product = |a||b|cos(θ). What is cos(90°)?",
-          "explanation": "cos(90°) = 0, so the dot product is 0."
-        },
-        {
-          "id": "vec_3",
-          "text": "If u = [1, 2] and v = [3, 1], what is u + v?",
-          "options": ["4, 3", "[4, 3]", "[3, 2]", "[2, -1]"],
-          "correct": 1,
-          "difficulty": 1,
-          "hint": "Add components element-wise: [x1+x2, y1+y2].",
-          "explanation": "[1+3, 2+1] = [4, 3]."
-        },
-        {
-          "id": "vec_4",
-          "text": "Which of these is a unit vector?",
-          "options": ["[1, 1]", "[0.6, 0.8]", "[1, 0.5]", "[0, 2]"],
-          "correct": 1,
-          "difficulty": 2,
-          "hint": "A unit vector has a magnitude of exactly 1.",
-          "explanation": "√(0.6² + 0.8²) = √(0.36 + 0.64) = √1 = 1."
-        },
-        {
-          "id": "vec_5",
-          "text": "Two vectors are parallel if:",
-          "options": ["Their dot product is 0", "One is a scalar multiple of the other", "They have same magnitude", "They are unit vectors"],
-          "correct": 1,
-          "difficulty": 2,
-          "hint": "If v = 2u, they point in the same direction.",
-          "explanation": "Parallel vectors are scalar multiples, e.g., v = k*u."
-        }
+        {"id": "vec_1", "text": "What is the magnitude (length) of vector v = [3, 4]?", "options": ["7", "5", "12", "1"], "correct": 1, "difficulty": 1, "hint": "Use the Pythagorean theorem: sqrt(x^2 + y^2).", "explanation": "sqrt(3^2 + 4^2) = sqrt(9 + 16) = sqrt(25) = 5."},
+        {"id": "vec_2", "text": "The dot product of two orthogonal (perpendicular) vectors is always:", "options": ["1", "0", "-1", "Infinite"], "correct": 1, "difficulty": 1, "hint": "Dot product = |a||b|cos(theta). What is cos(90)?", "explanation": "cos(90) = 0, so the dot product is 0."},
+        {"id": "vec_3", "text": "If u = [1, 2] and v = [3, 1], what is u + v?", "options": ["4, 3", "[4, 3]", "[3, 2]", "[2, -1]"], "correct": 1, "difficulty": 1, "hint": "Add components element-wise: [x1+x2, y1+y2].", "explanation": "[1+3, 2+1] = [4, 3]."},
+        {"id": "vec_4", "text": "Which of these is a unit vector?", "options": ["[1, 1]", "[0.6, 0.8]", "[1, 0.5]", "[0, 2]"], "correct": 1, "difficulty": 2, "hint": "A unit vector has a magnitude of exactly 1.", "explanation": "sqrt(0.6^2 + 0.8^2) = sqrt(0.36 + 0.64) = sqrt(1) = 1."},
+        {"id": "vec_5", "text": "Two vectors are parallel if:", "options": ["Their dot product is 0", "One is a scalar multiple of the other", "They have same magnitude", "They are unit vectors"], "correct": 1, "difficulty": 2, "hint": "If v = 2u, they point in the same direction.", "explanation": "Parallel vectors are scalar multiples, e.g., v = k*u."},
+        {"id": "vec_6", "text": "What is the magnitude of [0, 5]?", "options": ["0", "5", "25", "sqrt(5)"], "correct": 1, "difficulty": 1, "hint": "sqrt(0^2 + 5^2)", "explanation": "sqrt(0^2 + 5^2) = sqrt(25) = 5"},
+        {"id": "vec_7", "text": "If v = [2, 2], what is 3v?", "options": ["[5, 5]", "[6, 6]", "[2, 6]", "[6, 2]"], "correct": 1, "difficulty": 1, "hint": "Multiply each component by 3.", "explanation": "Scalar multiplication: 3*[2,2] = [6,6]"},
+        {"id": "vec_8", "text": "The dot product of [1, 2] and [3, 4] is:", "options": ["7", "11", "10", "14"], "correct": 1, "difficulty": 2, "hint": "Multiply corresponding components and add.", "explanation": "1*3 + 2*4 = 3 + 8 = 11"},
+        {"id": "vec_9", "text": "A vector with magnitude 1 is called:", "options": ["Zero vector", "Unit vector", "Basis vector", "Normal vector"], "correct": 1, "difficulty": 1, "hint": "Think about 'unit' meaning 1.", "explanation": "Unit vectors have length exactly 1."},
+        {"id": "vec_10", "text": "What is [4, 3] - [1, 1]?", "options": ["[5, 4]", "[3, 2]", "[4, 3]", "[3, 4]"], "correct": 1, "difficulty": 1, "hint": "Subtract component by component.", "explanation": "[4-1, 3-1] = [3, 2]"},
+        {"id": "vec_11", "text": "The magnitude of [5, 12] is:", "options": ["17", "13", "7", "60"], "correct": 1, "difficulty": 2, "hint": "5-12-13 is a Pythagorean triple.", "explanation": "sqrt(25 + 144) = sqrt(169) = 13"},
+        {"id": "vec_12", "text": "If two vectors have dot product 0, they are:", "options": ["Parallel", "Perpendicular", "Equal", "Opposite"], "correct": 1, "difficulty": 1, "hint": "Zero means 90 degree angle.", "explanation": "Zero dot product means 90 degree angle = perpendicular."},
+        {"id": "vec_13", "text": "What is the magnitude of [-3, 4]?", "options": ["1", "5", "7", "-5"], "correct": 1, "difficulty": 1, "hint": "Magnitude is always positive.", "explanation": "sqrt(9 + 16) = sqrt(25) = 5. Magnitude is always positive."},
+        {"id": "vec_14", "text": "The zero vector [0, 0] has magnitude:", "options": ["0", "1", "Undefined", "Infinite"], "correct": 0, "difficulty": 1, "hint": "sqrt(0 + 0) = ?", "explanation": "sqrt(0^2 + 0^2) = 0"},
+        {"id": "vec_15", "text": "To normalize a vector means to:", "options": ["Set it to zero", "Make it a unit vector", "Double its length", "Reverse its direction"], "correct": 1, "difficulty": 2, "hint": "Divide by magnitude.", "explanation": "Normalizing divides by magnitude to get length 1."}
       ]
     },
     {
@@ -62,55 +32,30 @@
       "name": "Matrix Operations",
       "prerequisites": ["vectors"],
       "difficulty": 0.3,
-      "lesson": "📚 **Matrix Operations**\n\nA matrix is a grid of numbers. Think of it as a transformation machine.\n\n**Addition:** Only works if SAME dimensions\n[[1,2]] + [[3,4]] = [[4,6]]\n\n**Multiplication Rules:**\n• Columns of A must equal Rows of B\n• (2×3) × (3×2) = ✓ works → gives (2×2)\n• (2×3) × (2×2) = ✗ fails (3 ≠ 2)\n\n**Identity Matrix (I):** Like multiplying by 1\nA × I = A (nothing changes)\n\n**Transpose:** Flip rows and columns\n[[1,2],[3,4]]ᵀ = [[1,3],[2,4]]",
+      "lesson": "**Matrix Operations**\n\nA matrix is a grid of numbers. Think of it as a transformation machine.\n\n**Addition:** Only works if SAME dimensions\n[[1,2]] + [[3,4]] = [[4,6]]\n\n**Multiplication Rules:**\n- Columns of A must equal Rows of B\n- (2x3) * (3x2) = works -> gives (2x2)\n- (2x3) * (2x2) = fails (3 != 2)\n\n**Identity Matrix (I):** Like multiplying by 1\nA * I = A (nothing changes)\n\n**Transpose:** Flip rows and columns\n[[1,2],[3,4]]^T = [[1,3],[2,4]]",
       "explanation": "Matrices are grids of numbers. Multiplication transforms space (rotates, scales, shears).",
       "teaching_prompt": "A matrix is just a collection of vectors. When we multiply a matrix by a vector, we are moving that vector to a new place.",
       "questions": [
-        {
-          "id": "mat_1",
-          "text": "Can you multiply a 2x3 matrix by a 2x2 matrix?",
-          "options": ["Yes", "No", "Only if square", "Only if identity"],
-          "correct": 1,
-          "difficulty": 1,
-          "hint": "Inner dimensions must match (Cols of A == Rows of B).",
-          "explanation": "2x3 times 2x2 -> 3 != 2. Impossible."
-        },
-        {
-          "id": "mat_2",
-          "text": "The Identity Matrix I has what property?",
-          "options": ["AI = A", "AI = 0", "AI = -A", "AI = I"],
-          "correct": 0,
-          "difficulty": 1,
-          "hint": "It acts like the number 1 in multiplication.",
-          "explanation": "Multiplying by Identity leaves the matrix unchanged. AI = IA = A."
-        },
-        {
-          "id": "mat_3",
-          "text": "Matrix addition is only possible if:",
-          "options": ["Both are square", "Both have same dimensions", "Determinants are equal", "One is Identity"],
-          "correct": 1,
-          "difficulty": 2,
-          "hint": "You add element by element.",
-          "explanation": "You can only add matrices of the exact same size (rows and columns)."
-        },
-        {
-          "id": "mat_4",
-          "text": "Matrix multiplication is:",
-          "options": ["Commutative (AB=BA)", "Not Commutative (AB!=BA)", "Associative only", "Distributive only"],
-          "correct": 1,
-          "difficulty": 2,
-          "hint": "Order matters. Rotating then Scaling is different from Scaling then Rotating.",
-          "explanation": "Generally AB ≠ BA."
-        },
-        {
-          "id": "mat_5",
-          "text": "What is the transpose of [[1, 2], [3, 4]]?",
-          "options": ["[[1, 3], [2, 4]]", "[[4, 3], [2, 1]]", "[[1, 2], [3, 4]]", "[[-1, -2], [-3, -4]]"],
-          "correct": 0,
-          "difficulty": 2,
-          "hint": "Swap rows and columns.",
-          "explanation": "Row 1 becomes Col 1. Row 2 becomes Col 2."
-        }
+        {"id": "mat_1", "text": "Can you multiply a 2x3 matrix by a 2x2 matrix?", "options": ["Yes", "No", "Only if square", "Only if identity"], "correct": 1, "difficulty": 1, "hint": "Inner dimensions must match (Cols of A == Rows of B).", "explanation": "2x3 times 2x2 -> 3 != 2. Inner dimensions must match."},
+        {"id": "mat_2", "text": "The Identity Matrix I has what property?", "options": ["AI = A", "AI = 0", "AI = -A", "AI = I"], "correct": 0, "difficulty": 1, "hint": "It acts like the number 1 in multiplication.", "explanation": "Multiplying by Identity leaves the matrix unchanged."},
+        {"id": "mat_3", "text": "Matrix addition is only possible if:", "options": ["Both are square", "Both have same dimensions", "Determinants are equal", "One is Identity"], "correct": 1, "difficulty": 2, "hint": "You add element by element.", "explanation": "You can only add matrices of the exact same size."},
+        {"id": "mat_4", "text": "Matrix multiplication is:", "options": ["Commutative (AB=BA)", "Not Commutative (AB!=BA)", "Associative only", "Distributive only"], "correct": 1, "difficulty": 2, "hint": "Order matters.", "explanation": "Generally AB != BA. Order matters."},
+        {"id": "mat_5", "text": "What is the transpose of [[1, 2], [3, 4]]?", "options": ["[[1, 3], [2, 4]]", "[[4, 3], [2, 1]]", "[[1, 2], [3, 4]]", "[[-1, -2], [-3, -4]]"], "correct": 0, "difficulty": 2, "hint": "Swap rows and columns.", "explanation": "Rows become columns."},
+        {"id": "mat_6", "text": "What is the result of (3x2) * (2x4)?", "options": ["3x4 matrix", "2x2 matrix", "4x3 matrix", "Cannot multiply"], "correct": 0, "difficulty": 1, "hint": "Inner dims match (2=2), use outer dims.", "explanation": "Inner dims match (2=2), result is outer dims: 3x4"},
+        {"id": "mat_7", "text": "If A is 2x3, what dimension is A^T?", "options": ["2x3", "3x2", "3x3", "2x2"], "correct": 1, "difficulty": 1, "hint": "Transpose swaps rows and columns.", "explanation": "Transpose swaps dimensions."},
+        {"id": "mat_8", "text": "[[1,2],[3,4]] + [[5,6],[7,8]] = ?", "options": ["[[6,8],[10,12]]", "[[5,12],[21,32]]", "[[6,6],[10,10]]", "Cannot add"], "correct": 0, "difficulty": 1, "hint": "Add element by element.", "explanation": "Add element by element."},
+        {"id": "mat_9", "text": "The zero matrix has what property?", "options": ["A + 0 = A", "A * 0 = A", "A - 0 = 0", "0 = I"], "correct": 0, "difficulty": 1, "hint": "Zero is the additive identity.", "explanation": "Zero is the additive identity."},
+        {"id": "mat_10", "text": "Can you add a 2x3 to a 3x2 matrix?", "options": ["Yes, result is 2x3", "Yes, result is 3x2", "No", "Only if square"], "correct": 2, "difficulty": 1, "hint": "Dimensions must match exactly.", "explanation": "Dimensions must match exactly for addition."},
+        {"id": "mat_11", "text": "(AB)^T equals:", "options": ["A^T B^T", "B^T A^T", "AB", "BA"], "correct": 1, "difficulty": 3, "hint": "Order reverses.", "explanation": "Transpose of product reverses order."},
+        {"id": "mat_12", "text": "If A is m*n and B is n*p, AB is:", "options": ["m*p", "n*n", "m*n", "p*m"], "correct": 0, "difficulty": 2, "hint": "Outer dimensions give result size.", "explanation": "Outer dimensions give result size."},
+        {"id": "mat_13", "text": "What is 3 * [[1,2],[3,4]]?", "options": ["[[3,6],[9,12]]", "[[3,2],[3,4]]", "[[1,2],[3,4]]", "[[4,5],[6,7]]"], "correct": 0, "difficulty": 1, "hint": "Multiply each element by the scalar.", "explanation": "Multiply each element by 3."},
+        {"id": "mat_14", "text": "(A^T)^T equals:", "options": ["A^T", "A", "I", "0"], "correct": 1, "difficulty": 2, "hint": "Transpose twice.", "explanation": "Double transpose returns original."},
+        {"id": "mat_15", "text": "A square matrix has:", "options": ["Same rows and columns", "More rows than columns", "More columns than rows", "Determinant of 1"], "correct": 0, "difficulty": 1, "hint": "Square means equal dimensions.", "explanation": "Square means n*n."},
+        {"id": "mat_16", "text": "If AB = BA, the matrices:", "options": ["Are inverse", "Commute", "Are transpose", "Are orthogonal"], "correct": 1, "difficulty": 2, "hint": "Rare but possible property.", "explanation": "Commutativity is rare but possible."},
+        {"id": "mat_17", "text": "The trace of [[1,2],[3,4]] is:", "options": ["5", "10", "7", "-2"], "correct": 0, "difficulty": 2, "hint": "Sum the diagonal.", "explanation": "Trace = sum of diagonal = 1+4 = 5"},
+        {"id": "mat_18", "text": "A diagonal matrix has non-zero elements:", "options": ["In first row", "On main diagonal only", "In first column", "Everywhere"], "correct": 1, "difficulty": 1, "hint": "Think about what 'diagonal' means.", "explanation": "Only diagonal entries can be non-zero."},
+        {"id": "mat_19", "text": "I * [[a,b],[c,d]] = ?", "options": ["[[a,b],[c,d]]", "I", "[[a,0],[0,d]]", "0"], "correct": 0, "difficulty": 2, "hint": "Identity doesn't change anything.", "explanation": "Identity doesn't change the matrix."},
+        {"id": "mat_20", "text": "For A - B, we compute:", "options": ["A + (-B)", "B + (-A)", "A * B^-1", "B * A^-1"], "correct": 0, "difficulty": 1, "hint": "Subtraction = adding the negative.", "explanation": "Subtraction is adding the negative."}
       ]
     },
     {
@@ -118,55 +63,25 @@
       "name": "Determinants",
       "prerequisites": ["matrix_ops"],
       "difficulty": 0.5,
-      "lesson": "📚 **What is a Determinant?**\n\nThe determinant tells you how much a matrix **SCALES area**.\n\n**Intuition:** Start with a 1×1 unit square (area = 1)\n• Matrix stretches it to 2×2 → determinant = **4**\n• Matrix squashes it to a line → determinant = **0**\n\n**2×2 Formula:** For [[a,b],[c,d]]\ndet = **ad - bc**\n\n**Example:** [[2,0],[0,2]]\ndet = (2×2) - (0×0) = **4**\n\n**Key Rules:**\n• det(A×B) = det(A) × det(B)\n• If det = 0 → matrix is \"singular\" (no inverse)",
+      "lesson": "**What is a Determinant?**\n\nThe determinant tells you how much a matrix **SCALES area**.\n\n**Intuition:** Start with a 1x1 unit square (area = 1)\n- Matrix stretches it to 2x2 -> determinant = **4**\n- Matrix squashes it to a line -> determinant = **0**\n\n**2x2 Formula:** For [[a,b],[c,d]]\ndet = **ad - bc**\n\n**Example:** [[2,0],[0,2]]\ndet = (2*2) - (0*0) = **4**\n\n**Key Rules:**\n- det(A*B) = det(A) * det(B)\n- If det = 0 -> matrix is 'singular' (no inverse)",
       "explanation": "The determinant tells us how much a matrix scales area. If it's 0, the matrix squishes space into a line or point.",
       "teaching_prompt": "Imagine a unit square with area 1. After the matrix transforms it, what is the new area? That number is the determinant.",
       "questions": [
-        {
-          "id": "det_1",
-          "text": "What is the determinant of [[2, 0], [0, 2]]?",
-          "options": ["2", "4", "0", "1"],
-          "correct": 1,
-          "difficulty": 1,
-          "hint": "For diagonal matrix, multiply the diagonals.",
-          "explanation": "2 * 2 - 0 * 0 = 4."
-        },
-        {
-          "id": "det_2",
-          "text": "If det(A) = 0, the matrix is:",
-          "options": ["Invertible", "Singular (Not Invertible)", "Identity", "Orthogonal"],
-          "correct": 1,
-          "difficulty": 1,
-          "hint": "Can you divide by zero?",
-          "explanation": "A determinant of 0 means the matrix collapses space and has no inverse."
-        },
-        {
-          "id": "det_3",
-          "text": "det(A * B) is equal to:",
-          "options": ["det(A) + det(B)", "det(A) * det(B)", "det(A) - det(B)", "0"],
-          "correct": 1,
-          "difficulty": 2,
-          "hint": "Scaling by A then B is like scaling by their product.",
-          "explanation": "The determinant of a product is the product of determinants."
-        },
-        {
-          "id": "det_4",
-          "text": "What is the determinant of the Identity matrix?",
-          "options": ["0", "1", "-1", "Undefined"],
-          "correct": 1,
-          "difficulty": 1,
-          "hint": "It doesn't change the area at all.",
-          "explanation": "Area factor is 1."
-        },
-        {
-          "id": "det_5",
-          "text": "For a 2x2 matrix [[a, b], [c, d]], the determinant is:",
-          "options": ["ad + bc", "ad - bc", "ab - cd", "ac - bd"],
-          "correct": 1,
-          "difficulty": 2,
-          "hint": "Main diagonal minus other diagonal.",
-          "explanation": "Formula is ad - bc."
-        }
+        {"id": "det_1", "text": "What is the determinant of [[2, 0], [0, 2]]?", "options": ["2", "4", "0", "1"], "correct": 1, "difficulty": 1, "hint": "For diagonal matrix, multiply the diagonals.", "explanation": "2*2 - 0*0 = 4"},
+        {"id": "det_2", "text": "If det(A) = 0, the matrix is:", "options": ["Invertible", "Singular (Not Invertible)", "Identity", "Orthogonal"], "correct": 1, "difficulty": 1, "hint": "Can you divide by zero?", "explanation": "Zero determinant = no inverse."},
+        {"id": "det_3", "text": "det(A * B) equals:", "options": ["det(A) + det(B)", "det(A) * det(B)", "det(A) - det(B)", "0"], "correct": 1, "difficulty": 2, "hint": "Scaling by A then B is like scaling by their product.", "explanation": "Determinant of product = product of determinants."},
+        {"id": "det_4", "text": "What is det(I) for identity matrix?", "options": ["0", "1", "-1", "Undefined"], "correct": 1, "difficulty": 1, "hint": "Identity doesn't change the area.", "explanation": "Identity has determinant 1."},
+        {"id": "det_5", "text": "For [[a,b],[c,d]], det = ?", "options": ["ad + bc", "ad - bc", "ab - cd", "ac - bd"], "correct": 1, "difficulty": 2, "hint": "Main diagonal minus off diagonal.", "explanation": "Formula is ad - bc."},
+        {"id": "det_6", "text": "det([[3,0],[0,3]]) = ?", "options": ["3", "6", "9", "0"], "correct": 2, "difficulty": 1, "hint": "3*3 - 0*0", "explanation": "3*3 - 0*0 = 9"},
+        {"id": "det_7", "text": "det([[1,2],[2,4]]) = ?", "options": ["0", "4", "-4", "8"], "correct": 0, "difficulty": 2, "hint": "1*4 - 2*2 = ?", "explanation": "1*4 - 2*2 = 4-4 = 0 (singular!)"},
+        {"id": "det_8", "text": "If det = 0, the matrix squashes space to:", "options": ["A cube", "A lower dimension", "A sphere", "Nothing changes"], "correct": 1, "difficulty": 2, "hint": "Zero area means collapsed.", "explanation": "Zero det means collapse to lower dimension."},
+        {"id": "det_9", "text": "det([[5,0],[0,0]]) = ?", "options": ["5", "0", "25", "Undefined"], "correct": 1, "difficulty": 1, "hint": "5*0 - 0*0 = ?", "explanation": "5*0 - 0*0 = 0"},
+        {"id": "det_10", "text": "A negative determinant means:", "options": ["No inverse", "Orientation flipped", "Matrix is zero", "Matrix is identity"], "correct": 1, "difficulty": 2, "hint": "Think about reflection.", "explanation": "Negative det = reflection/flip."},
+        {"id": "det_11", "text": "det([[1,0],[0,1]]) = ?", "options": ["0", "1", "2", "-1"], "correct": 1, "difficulty": 1, "hint": "This is the identity matrix.", "explanation": "Identity: 1*1 - 0*0 = 1"},
+        {"id": "det_12", "text": "det(kA) for scalar k and 2x2 A:", "options": ["k * det(A)", "k^2 * det(A)", "det(A)/k", "det(A) + k"], "correct": 1, "difficulty": 3, "hint": "Each row gets multiplied by k.", "explanation": "Scaling by k: det(kA) = k^n * det(A) for n*n."},
+        {"id": "det_13", "text": "det([[0,1],[1,0]]) = ?", "options": ["0", "1", "-1", "2"], "correct": 2, "difficulty": 2, "hint": "0*0 - 1*1 = ?", "explanation": "0*0 - 1*1 = -1"},
+        {"id": "det_14", "text": "If det(A) = 3, det(A^-1) = ?", "options": ["3", "1/3", "-3", "9"], "correct": 1, "difficulty": 3, "hint": "Inverse undoes the scaling.", "explanation": "det(A^-1) = 1/det(A)"},
+        {"id": "det_15", "text": "det([[2,1],[4,2]]) = ?", "options": ["0", "2", "4", "-2"], "correct": 0, "difficulty": 2, "hint": "2*2 - 1*4 = ?", "explanation": "2*2 - 1*4 = 4-4 = 0"}
       ]
     },
     {
@@ -174,111 +89,51 @@
       "name": "Inverse Matrices",
       "prerequisites": ["determinants"],
       "difficulty": 0.6,
-      "lesson": "📚 **What is an Inverse Matrix?**\n\nThe inverse **UNDOES** what a matrix does.\n\nIf A stretches by 2 → A⁻¹ shrinks by ½\n\n**Key Property:** A × A⁻¹ = **I** (Identity Matrix)\n\n**When does an inverse exist?**\n✓ Determinant ≠ 0\n✗ Determinant = 0 (no inverse!)\n\n**Why?** If det=0, the matrix \"squashes\" 3D into 2D.\nYou can't unsquash a pancake back into a cube!\n\n**Example:**\n[[2,0],[0,2]]⁻¹ = [[0.5,0],[0,0.5]]\n(Stretch by 2 → Shrink by ½)\n\n**Reversal Rule:** (AB)⁻¹ = B⁻¹A⁻¹\n(Like taking off shoes then socks)",
+      "lesson": "**What is an Inverse Matrix?**\n\nThe inverse **UNDOES** what a matrix does.\n\nIf A stretches by 2 -> A^-1 shrinks by 1/2\n\n**Key Property:** A * A^-1 = **I** (Identity Matrix)\n\n**When does an inverse exist?**\n- Determinant != 0\n- Determinant = 0 (no inverse!)\n\n**Example:**\n[[2,0],[0,2]]^-1 = [[0.5,0],[0,0.5]]",
       "explanation": "The inverse undoes a transformation. A^-1 * A = I. It only exists if the determinant is not zero.",
       "teaching_prompt": "If a matrix A multiplies a vector by 2, the inverse A^-1 divides it by 2. It brings you back home.",
       "questions": [
-        {
-          "id": "inv_1",
-          "text": "A matrix has an inverse ONLY if:",
-          "options": ["It is square", "Its determinant is non-zero", "It contains no zeros", "It is identity"],
-          "correct": 1,
-          "difficulty": 1,
-          "hint": "Singular matrices have no inverse.",
-          "explanation": "Non-zero determinant is the requirement for invertibility."
-        },
-        {
-          "id": "inv_2",
-          "text": "What is A multiplied by A inverse?",
-          "options": ["A", "0", "Identity Matrix (I)", "A^2"],
-          "correct": 2,
-          "difficulty": 1,
-          "hint": "Undoing an action leaves you with nothing changed.",
-          "explanation": "A * A^-1 = I."
-        },
-        {
-          "id": "inv_3",
-          "text": "The inverse of [[2, 0], [0, 2]] is:",
-          "options": ["[[2, 0], [0, 2]]", "[[0.5, 0], [0, 0.5]]", "[[-2, 0], [0, -2]]", "[[0, 2], [2, 0]]"],
-          "correct": 1,
-          "difficulty": 2,
-          "hint": "Reciprocal of the diagonal.",
-          "explanation": "Inverse of scaling by 2 is scaling by 1/2 (0.5)."
-        },
-        {
-          "id": "inv_4",
-          "text": "(AB)^-1 is equal to:",
-          "options": ["A^-1 B^-1", "B^-1 A^-1", "A^-1 + B^-1", "AB"],
-          "correct": 1,
-          "difficulty": 3,
-          "hint": "Socks and Shoes rule. To undo putting on socks then shoes, you take off shoes then socks.",
-          "explanation": "Order reverses: B inverse then A inverse."
-        },
-        {
-          "id": "inv_5",
-          "text": "Why does a matrix with a column of zeros have no inverse?",
-          "options": ["Determinant is 0", "It is not square", "It is too small", "It is negative"],
-          "correct": 0,
-          "difficulty": 2,
-          "hint": "Calculate the determinant.",
-          "explanation": "If a row/col is zero, determinant is 0, so it's singular."
-        }
+        {"id": "inv_1", "text": "A matrix has an inverse ONLY if:", "options": ["It is square", "Its determinant is non-zero", "It contains no zeros", "It is identity"], "correct": 1, "difficulty": 1, "hint": "Singular matrices have no inverse.", "explanation": "Non-zero determinant required."},
+        {"id": "inv_2", "text": "A * A^-1 = ?", "options": ["A", "0", "Identity Matrix (I)", "A^2"], "correct": 2, "difficulty": 1, "hint": "Undoing an action.", "explanation": "Inverse gives identity."},
+        {"id": "inv_3", "text": "The inverse of [[2,0],[0,2]] is:", "options": ["[[2,0],[0,2]]", "[[0.5,0],[0,0.5]]", "[[-2,0],[0,-2]]", "[[0,2],[2,0]]"], "correct": 1, "difficulty": 2, "hint": "Reciprocal of scaling.", "explanation": "Scale by 2 -> inverse scales by 1/2."},
+        {"id": "inv_4", "text": "(AB)^-1 = ?", "options": ["A^-1 B^-1", "B^-1 A^-1", "AB", "(AB)^T"], "correct": 1, "difficulty": 3, "hint": "Socks and shoes rule.", "explanation": "Inverse of product reverses order."},
+        {"id": "inv_5", "text": "If det(A) = 0, then A^-1:", "options": ["Equals A", "Equals I", "Does not exist", "Equals 0"], "correct": 2, "difficulty": 1, "hint": "Zero determinant.", "explanation": "Singular matrices have no inverse."},
+        {"id": "inv_6", "text": "(A^-1)^-1 = ?", "options": ["A^-1", "A", "I", "0"], "correct": 1, "difficulty": 2, "hint": "Inverse of inverse.", "explanation": "Inverse of inverse = original."},
+        {"id": "inv_7", "text": "I^-1 = ?", "options": ["0", "I", "Undefined", "-I"], "correct": 1, "difficulty": 1, "hint": "Identity is special.", "explanation": "Identity is its own inverse."},
+        {"id": "inv_8", "text": "If A^-1 = A, then A is:", "options": ["Zero matrix", "Involutory", "Singular", "Diagonal"], "correct": 1, "difficulty": 3, "hint": "Self-inverse property.", "explanation": "Self-inverse matrices are involutory."},
+        {"id": "inv_9", "text": "For 2x2 [[a,b],[c,d]], the inverse involves:", "options": ["Adding elements", "1/det times adjugate", "Squaring elements", "Transposing only"], "correct": 1, "difficulty": 2, "hint": "Formula for 2x2 inverse.", "explanation": "A^-1 = (1/det) * adjugate."},
+        {"id": "inv_10", "text": "(A^T)^-1 = ?", "options": ["(A^-1)^T", "A^T", "A^-1", "A"], "correct": 0, "difficulty": 3, "hint": "Transpose and inverse.", "explanation": "Transpose and inverse commute."},
+        {"id": "inv_11", "text": "The inverse of [[1,0],[0,1]] is:", "options": ["[[0,1],[1,0]]", "[[1,0],[0,1]]", "[[-1,0],[0,-1]]", "Does not exist"], "correct": 1, "difficulty": 1, "hint": "This is the identity.", "explanation": "Identity is its own inverse."},
+        {"id": "inv_12", "text": "A matrix with no inverse is called:", "options": ["Diagonal", "Singular", "Orthogonal", "Symmetric"], "correct": 1, "difficulty": 1, "hint": "det = 0 means...", "explanation": "Singular = det is 0 = no inverse."},
+        {"id": "inv_13", "text": "det(A^-1) = ?", "options": ["det(A)", "1/det(A)", "-det(A)", "det(A)^2"], "correct": 1, "difficulty": 2, "hint": "Inverse undoes scaling.", "explanation": "Determinant of inverse is reciprocal."},
+        {"id": "inv_14", "text": "If Ax = b, then x = ?", "options": ["bA", "A^-1 b", "Ab^-1", "b/A"], "correct": 1, "difficulty": 2, "hint": "Multiply both sides by A^-1.", "explanation": "Multiply both sides by A^-1."},
+        {"id": "inv_15", "text": "Can a 2x3 matrix have an inverse?", "options": ["Yes", "No", "Only if det != 0", "Only if symmetric"], "correct": 1, "difficulty": 1, "hint": "Must be square.", "explanation": "Only square matrices can have inverses."}
       ]
     },
     {
       "id": "eigenvalues",
       "name": "Eigenvalues",
       "prerequisites": ["inverse_matrix"],
-      "difficulty": 0.8,
-      "lesson": "📚 **What are Eigenvalues?**\n\nWhen a matrix transforms vectors, most vectors change direction.\n\nBut some special vectors **only get stretched** (not rotated).\nThese are **Eigenvectors**. The stretch factor is the **Eigenvalue (λ)**.\n\n**The Magic Formula:** A·v = λ·v\n(Matrix × vector = scalar × same vector)\n\n**Intuition:** Spin a globe. Most points move around.\nBut North & South poles stay on the same axis → they're eigenvectors!\n\n**Key Properties:**\n• Sum of eigenvalues = **Trace** (sum of diagonal)\n• Product of eigenvalues = **Determinant**\n\n**Critical:** If any eigenvalue = 0 → det = 0 → NOT invertible",
+      "difficulty": 0.7,
+      "lesson": "**What are Eigenvalues & Eigenvectors?**\n\nAn **eigenvector** is a special vector that doesn't rotate when transformed.\nIt only **stretches** (or shrinks).\n\n**The eigenvalue lambda tells you HOW MUCH it stretches.**\n\n**Equation:** A * v = lambda * v\n(Matrix * vector = scalar * same vector)\n\n**Sum of eigenvalues = Trace**\n**Product of eigenvalues = Determinant**",
       "explanation": "Eigenvectors are vectors that don't change direction during transformation. Eigenvalues are how much they stretch. Key for PCA and PageRank.",
       "teaching_prompt": "Spin a globe. Most points move around. But the North and South poles stay on the same axis. They are the 'Eigenvectors' of the rotation.",
       "questions": [
-        {
-          "id": "eig_1",
-          "text": "If Av = λv, then λ is the:",
-          "options": ["Eigenvector", "Eigenvalue", "Matrix", "Identity"],
-          "correct": 1,
-          "difficulty": 1,
-          "hint": "It's the scalar multiplier.",
-          "explanation": "Lambda (λ) is the Eigenvalue."
-        },
-        {
-          "id": "eig_2",
-          "text": "Eigenvectors must be:",
-          "options": ["Zero vectors", "Non-zero vectors", "Unit vectors", "Positive"],
-          "correct": 1,
-          "difficulty": 1,
-          "hint": "The zero vector trivially works for everything, so we exclude it.",
-          "explanation": "By definition, eigenvectors must be non-zero."
-        },
-        {
-          "id": "eig_3",
-          "text": "The sum of eigenvalues equals:",
-          "options": ["Determinant", "Trace (sum of diagonal)", "0", "1"],
-          "correct": 1,
-          "difficulty": 3,
-          "hint": "A handy property of matrices.",
-          "explanation": "Sum of eigenvalues = Trace of the matrix."
-        },
-        {
-          "id": "eig_4",
-          "text": "The product of eigenvalues equals:",
-          "options": ["Trace", "Determinant", "0", "1"],
-          "correct": 1,
-          "difficulty": 3,
-          "hint": "Relates to area scaling.",
-          "explanation": "Product of eigenvalues = Determinant."
-        },
-        {
-          "id": "eig_5",
-          "text": "If a matrix has eigenvalue 0, then:",
-          "options": ["It is invertible", "It is not invertible (Singular)", "It is identity", "It is symmetric"],
-          "correct": 1,
-          "difficulty": 2,
-          "hint": "Product of eigenvalues is determinant. If one is 0...",
-          "explanation": "Determinant is 0, so it is singular."
-        }
+        {"id": "eig_1", "text": "If Av = lambda*v, then lambda is the:", "options": ["Eigenvector", "Eigenvalue", "Matrix", "Identity"], "correct": 1, "difficulty": 1, "hint": "It's the scalar multiplier.", "explanation": "lambda is the eigenvalue (scalar)."},
+        {"id": "eig_2", "text": "Eigenvectors must be:", "options": ["Zero vectors", "Non-zero vectors", "Unit vectors", "Positive"], "correct": 1, "difficulty": 1, "hint": "Zero vector is excluded.", "explanation": "By definition, non-zero."},
+        {"id": "eig_3", "text": "Sum of eigenvalues equals:", "options": ["Determinant", "Trace (diagonal sum)", "0", "1"], "correct": 1, "difficulty": 3, "hint": "A handy property.", "explanation": "Sum = trace."},
+        {"id": "eig_4", "text": "Product of eigenvalues equals:", "options": ["Trace", "Determinant", "0", "1"], "correct": 1, "difficulty": 3, "hint": "Area scaling factor.", "explanation": "Product = determinant."},
+        {"id": "eig_5", "text": "If eigenvalue is 0, the matrix is:", "options": ["Invertible", "Singular", "Identity", "Symmetric"], "correct": 1, "difficulty": 2, "hint": "Product of eigenvalues = det.", "explanation": "Zero eigenvalue = zero determinant = singular."},
+        {"id": "eig_6", "text": "For I (identity), all eigenvalues are:", "options": ["0", "1", "-1", "Undefined"], "correct": 1, "difficulty": 1, "hint": "Iv = 1*v for all v.", "explanation": "Iv = 1*v for all v."},
+        {"id": "eig_7", "text": "If lambda is eigenvalue of A, then 2*lambda is eigenvalue of:", "options": ["A", "2A", "A^2", "A + I"], "correct": 1, "difficulty": 2, "hint": "Scaling the matrix.", "explanation": "Scaling matrix scales eigenvalues."},
+        {"id": "eig_8", "text": "If lambda is eigenvalue of A, then lambda^2 is eigenvalue of:", "options": ["A", "2A", "A^2", "A^T"], "correct": 2, "difficulty": 3, "hint": "A^2 v = A(Av) = ?", "explanation": "A^2 v = A(Av) = A(lambda*v) = lambda(Av) = lambda^2 v"},
+        {"id": "eig_9", "text": "Characteristic equation is det(A - lambda*I) = ?", "options": ["lambda", "1", "0", "A"], "correct": 2, "difficulty": 2, "hint": "Set to zero to find eigenvalues.", "explanation": "Set to 0 to find eigenvalues."},
+        {"id": "eig_10", "text": "A 2x2 matrix has how many eigenvalues?", "options": ["1", "2", "4", "Infinite"], "correct": 1, "difficulty": 1, "hint": "n*n matrix has n eigenvalues.", "explanation": "n*n matrix has n eigenvalues (counting multiplicity)."},
+        {"id": "eig_11", "text": "If A is symmetric, eigenvalues are:", "options": ["Complex", "Real", "Zero", "Negative"], "correct": 1, "difficulty": 2, "hint": "Special property of symmetric matrices.", "explanation": "Symmetric matrices have real eigenvalues."},
+        {"id": "eig_12", "text": "Eigenvectors for different eigenvalues are:", "options": ["Parallel", "Perpendicular", "Linearly independent", "Equal"], "correct": 2, "difficulty": 3, "hint": "Distinct eigenvalues give independence.", "explanation": "Different eigenvalues -> independent eigenvectors."},
+        {"id": "eig_13", "text": "If lambda is eigenvalue of A, 1/lambda is eigenvalue of:", "options": ["A", "A^T", "A^-1", "A + I"], "correct": 2, "difficulty": 3, "hint": "Inverse flips everything.", "explanation": "Inverse flips eigenvalues."},
+        {"id": "eig_14", "text": "For [[2,0],[0,3]], eigenvalues are:", "options": ["2 and 3", "5 and 0", "6 and 1", "1 and 6"], "correct": 0, "difficulty": 1, "hint": "Diagonal elements are eigenvalues.", "explanation": "Diagonal elements are the eigenvalues."},
+        {"id": "eig_15", "text": "If all eigenvalues are positive, matrix is:", "options": ["Negative definite", "Positive definite", "Singular", "Orthogonal"], "correct": 1, "difficulty": 2, "hint": "Sign of eigenvalues determines definiteness.", "explanation": "All positive eigenvalues = positive definite."}
       ]
     }
   ]
