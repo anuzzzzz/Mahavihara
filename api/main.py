@@ -195,6 +195,8 @@ def start_session(request: StartSessionRequest):
     concepts = get_concept_order()
     first_concept = concepts[0]
     concept_data = kg.get_concept(first_concept)
+    if concept_data is None:
+        concept_data = {"name": first_concept.replace("_", " ").title(), "lesson": ""}
 
     # Generate welcome message
     welcome = f"""**Welcome to Mahavihara!**
